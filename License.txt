@@ -1,0 +1,126 @@
+The translated license terms can be viewed here: http://www14.software.ibm.com/cgi-bin/weblap/lap.pl?li_formnum=L-FBSM-XHWD26
+
+IMPORTANT: READ CAREFULLY
+
+Two license agreements are presented below.
+
+1. IBM International License Agreement for Evaluation of Programs
+2. IBM International Program License Agreement
+
+If Licensee is obtaining the Program for purposes of productive use (other than evaluation, testing, trial "try or buy," or demonstration): By clicking on the "Accept" button below, Licensee accepts the IBM International Program License Agreement, without modification.
+
+If Licensee is obtaining the Program for the purpose of evaluation, testing, trial "try or buy," or demonstration (collectively, an "Evaluation"): By clicking on the "Accept" button below, Licensee accepts both (i) the IBM International License Agreement for Evaluation of Programs (the "Evaluation License"), without modification; and (ii) the IBM International Program License Agreement (the "IPLA"), without modification.
+
+The Evaluation License will apply during the term of Licensee's Evaluation.
+
+The IPLA will automatically apply if Licensee elects to retain the Program after the Evaluation (or obtain additional copies of the Program for use after the Evaluation) by entering into a procurement agreement (e.g., the IBM International Passport Advantage or the IBM Passport Advantage Express agreements).
+
+The Evaluation License and the IPLA are not in effect concurrently; neither modifies the other; and each is independent of the other.
+
+The complete text of each of these two license agreements follow.
+
+LICENSE INFORMATION
+
+The Programs listed below are licensed under the following License Information terms and conditions in addition to the Program license terms previously agreed to by Client and IBM. If Client does not have previously agreed to license terms in effect for the Program, the International License Agreement for Evaluation of Programs (i125-5543-06) applies.
+
+Program Name (Program Number):
+IBM Automation Decision Services 22.0.2  (Evaluation)
+
+The following standard terms apply to Licensee's use of the Program.
+
+Evaluation Period
+
+The evaluation period begins on the date that Licensee agrees to the terms of this Agreement and ends after 30 days.
+
+Multi-Product Install Image
+
+The Program is provided as part of a multi-product install image. Licensee is authorized to install and use only the Program (and its Bundled or Supporting Programs, if any) for which a valid entitlement is obtained and may not install or use any of the other software included in the image unless Licensee has acquired separate entitlements for that other software.
+
+Supporting Programs
+
+Licensee is authorized to install and use the Supporting Programs identified below only to support Licensee's use of the Principal Program under this Agreement. The phrase "to support Licensee's use" would only include those uses that are necessary or otherwise directly related to a licensed use of the Principal Program or another Supporting Program. The Supporting Programs may not be used for any other purpose. A Supporting Program may be accompanied by license terms, and those terms, if any, apply to Licensee's use of that Supporting Program. In the event of conflict, the terms in this License Information document supersede the Supporting Program's terms. Licensee must obtain sufficient entitlements to the Program, as a whole, to cover Licensee's installation and use of all of the Supporting Programs, unless separate entitlements are provided within this License Information document. For example, if this Program were licensed on a VPC (Virtual Processor Core) basis and Licensee were to install the Principal Program or a Supporting Program on a 10 VPC machine and another Supporting Program on a second 10 VPC machine, Licensee would be required to obtain 20 VPC entitlements to the Program.
+
+Supporting Programs:
+IBM WebSphere Application Server Liberty
+
+Modifiable Third Party Code
+
+To the extent, if any, in the NOTICES file IBM identifies third party code as "Modifiable Third Party Code," IBM authorizes Licensee to 1) modify the Modifiable Third Party Code and 2) reverse engineer the Program modules that directly interface with the Modifiable Third Party Code provided that it is only for the purpose of debugging Licensee's modifications to such third party code. IBM's service and support obligations, if any, apply only to the unmodified Program.
+
+Privacy
+
+Licensee acknowledges and agrees that IBM may use cookie and tracking technologies to collect personal information in gathering product usage statistics and information designed to help improve user experience and/or to tailor interactions with users in accordance with the IBM Online Privacy Policy, available at http://www.ibm.com/privacy/.
+
+Source Components and Sample Materials
+
+The Program includes components in source code form ("Source Components"), or other materials identified as Sample Materials or both. Licensee may copy and modify Source Components and Sample Materials for internal use only within the limits of the license rights under this Agreement; provided, however, that Licensee may not alter or delete any copyright information or notices contained in the Source Components or Sample Materials. IBM provides the Source Components and Sample Materials without obligation of support and "AS IS", WITH NO WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING THE WARRANTY OF TITLE, NON-INFRINGEMENT OR NON-INTERFERENCE AND THE IMPLIED WARRANTIES AND CONDITIONS OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+Third Party Data and Services
+
+The Program provides access to third party data services, databases, web services, software, or other third party content (all, "Third Party Content"). Access to this Third Party Content is provided "AS-IS", WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING THE WARRANTY OF TITLE, NON-INFRINGEMENT OR NON-INTERFERENCE AND THE IMPLIED WARRANTIES AND CONDITIONS OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. Access can be terminated by the relevant third parties at their sole discretion at any time. Licensee may be required to enter into separate agreements with the third parties for the access to or use of such Third Party Content. IBM is not a party to any such separate agreements and as an express condition of this license Licensee agrees to comply with the terms of such separate agreements.
+
+
+LICENSE INFORMATION
+
+The Programs listed below are licensed under the following License Information terms and conditions in addition to the Program license terms previously agreed to by Client and IBM. If Client does not have previously agreed to license terms in effect for the Program, the International Program License Agreement (i125-3301-15) applies.
+
+Program Name (Program Number):
+IBM Automation Decision Services 22.0.2  ((5900-AUD))
+
+The following standard terms apply to Licensee's use of the Program.
+
+Multi-Product Install Image
+
+The Program is provided as part of a multi-product install image. Licensee is authorized to install and use only the Program (and its Bundled or Supporting Programs, if any) for which a valid entitlement is obtained and may not install or use any of the other software included in the image unless Licensee has acquired separate entitlements for that other software.
+
+Supporting Programs
+
+Licensee is authorized to install and use the Supporting Programs identified below only to support Licensee's use of the Principal Program under this Agreement. The phrase "to support Licensee's use" would only include those uses that are necessary or otherwise directly related to a licensed use of the Principal Program or another Supporting Program. The Supporting Programs may not be used for any other purpose. A Supporting Program may be accompanied by license terms, and those terms, if any, apply to Licensee's use of that Supporting Program. In the event of conflict, the terms in this License Information document supersede the Supporting Program's terms. Licensee must obtain sufficient entitlements to the Program, as a whole, to cover Licensee's installation and use of all of the Supporting Programs, unless separate entitlements are provided within this License Information document. For example, if this Program were licensed on a VPC (Virtual Processor Core) basis and Licensee were to install the Principal Program or a Supporting Program on a 10 VPC machine and another Supporting Program on a second 10 VPC machine, Licensee would be required to obtain 20 VPC entitlements to the Program.
+
+Supporting Programs:
+IBM WebSphere Application Server Liberty
+
+Non-Production Limitation
+
+If the Program is designated as "Non-Production", Licensee can only use the Program as part of Licensee's internal development and test environment for internal non-production activities.
+
+Modifiable Third Party Code
+
+To the extent, if any, in the NOTICES file IBM identifies third party code as "Modifiable Third Party Code," IBM authorizes Licensee to 1) modify the Modifiable Third Party Code and 2) reverse engineer the Program modules that directly interface with the Modifiable Third Party Code provided that it is only for the purpose of debugging Licensee's modifications to such third party code. IBM's service and support obligations, if any, apply only to the unmodified Program.
+
+Privacy
+
+Licensee acknowledges and agrees that IBM may use cookie and tracking technologies to collect personal information in gathering product usage statistics and information designed to help improve user experience and/or to tailor interactions with users in accordance with the IBM Online Privacy Policy, available at http://www.ibm.com/privacy/.
+
+Source Components and Sample Materials
+
+The Program includes components in source code form ("Source Components"), or other materials identified as Sample Materials or both. Licensee may copy and modify Source Components and Sample Materials for internal use only within the limits of the license rights under this Agreement; provided, however, that Licensee may not alter or delete any copyright information or notices contained in the Source Components or Sample Materials. IBM provides the Source Components and Sample Materials without obligation of support and "AS IS", WITH NO WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING THE WARRANTY OF TITLE, NON-INFRINGEMENT OR NON-INTERFERENCE AND THE IMPLIED WARRANTIES AND CONDITIONS OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+Third Party Data and Services
+
+The Program provides access to third party data services, databases, web services, software, or other third party content (all, "Third Party Content"). Access to this Third Party Content is provided "AS-IS", WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING THE WARRANTY OF TITLE, NON-INFRINGEMENT OR NON-INTERFERENCE AND THE IMPLIED WARRANTIES AND CONDITIONS OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. Access can be terminated by the relevant third parties at their sole discretion at any time. Licensee may be required to enter into separate agreements with the third parties for the access to or use of such Third Party Content. IBM is not a party to any such separate agreements and as an express condition of this license Licensee agrees to comply with the terms of such separate agreements.
+
+The following units of measure may apply to Licensee's use of the Program.
+
+Establishment
+
+Establishment is a unit of measure by which the Program can be licensed. An Establishment is a single physical site, including the surrounding campus and satellite offices located within 50 kilometers, of Licensee's site address. Licensee must obtain an entitlement for each Establishment at or for which the Program will be used. Licensee is permitted to deploy an unlimited number of copies of the Program within the Establishment. An entitlement for an Establishment is unique to that Establishment and may not be shared, nor may it be reassigned other than for the permanent closing of the Establishment.
+
+Monthly API Call
+
+Monthly API Call is a unit of measure by which the Program can be licensed. An API Call is the invocation of the Program via a programmable interface. Sufficient entitlements must be obtained to cover the maximum number of API Calls in any calendar month.
+
+In addition to the above, the following terms apply to Licensee's use of the Program.
+
+Cumulative Entitlements
+
+Establishment, and Monthly API Call entitlements are not alternative means for licensing the Program. Licensee must obtain the appropriate number of Establishment entitlements as well as the appropriate number of Monthly API Call.
+
+Use of Usage Metering Data
+
+The Program enables use of a usage metering dashboard (the "Dashboard") that enables the display and monitoring of certain data and metrics regarding Licensee's deployment and usage of IBM and non-IBM software programs, as well as the computing environment on which they are deployed ("Usage Metering Data"). Usage of the Dashboard requires registration on either the Red Hat Marketplace or IBM Software Central. Licensee's usage of the Dashboard and IBM's use and sharing of Usage Metering Data are governed by the terms of the Service Description for the Red Hat Marketplace, Operated by IBM, available here: https://www.ibm.com/support/customer/csol/terms?id=i126-8719, and if Licensee enables or uses the Dashboard, Licensee agrees to those terms.
+
+
+L/N: L-FBSM-XHWD26
+D/N: L-FBSM-XHWD26
+P/N: L-FBSM-XHWD26
