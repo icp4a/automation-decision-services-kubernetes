@@ -1,6 +1,6 @@
 # Installing Automation Decision Services on Kubernetes
 
-You can install Automation Decision Services on an OpenShift Container Platform (OCP) or Cloud Native Computing Foundation (CNCF) Certified Kubernetes cluster. 
+You can install Automation Decision Services on different Kubernetes distributions. 
 
 You must use Operator Lifecycle Manager (OLM) to install the Automation Decision Services operator along with its Cloud Pak foundational services and Cloud Pak Platform UI (Zen) dependencies. 
 
@@ -12,9 +12,9 @@ Automation Decision Services uses the foundational services for licensing and au
 ![overall diagram](./ADS_KN_overview.png "Overall Diagram")
 
 ## Step 1: Prerequisites 
-You can install Automation Services on the following Kubernetes clusters:
+With the following instructions, you can install Automation Services on the following Kubernetes clusters:
 - OpenShift Container Platform (OCP)
-- CNCF Certified Kubernetes
+- Amazon Elastic Kubernetes Service (EKS)
 
 Before you install Automation Decision Services, you need to check your environment to make sure that you have everything you need.
 
