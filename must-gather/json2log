@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+
+# Convert json log entries typically output by ADS containers to line-style logs
+# more readable by humains.
+#
+# Reads on stdin, output on stdout.
+# Input lines that are not json are copied on output without parsing.
+#
+# Sample:
+# `kubectl logs ads-ads-rest-api-fbb5c8688-8ngw6  -f | jsonlogs2lines`
+
+import json
+import sys
+import os
+import re
+import string
+
+# For debug of this script, print the input json before the processed output
+DUMP_JSON=os.environ.get('DUMP_JSON')
+
+def gettimestamp(e):
+    try:
+        return e['@timestamp']
+    except KeyError:
+        return e['ibm_datetime']
+
+def gethostname(e):
+    h = e['host']
+    try:
+        return h['name']
+    except TypeError:
+        return h
+
+def decodeRawLines(lines):
+    msg = bytearray()
+    for l in lines:
+        l = l.strip()
+        l = l[6:54].strip()
+        codes_str = re.split(" +", l)
+        #print(codes_str)
+        for i in codes_str:
+            c = int(i, 16)
+            if chr(c) in string.printable:
+                msg.append(c)
+            else:
+                msg.append(ord('?'))
+
+    return msg.decode('ascii', 'ignore')
+
+def getstacktrace(j):
+    s = j.get('exception', None)
+    if s:
+        msg = "%s:%s\n" % (s['exceptionType'], s['message'])
+        for f in s['frames']:
+            msg += "   %s::%s:%s\n" % (f['class'], f['method'], f.get('line', "<unknown line>"))
+        return msg
+    s = j.get('stack_trace', None)
+    if not s:
+        s = j.get('ibm_stackTrace', None)
+    return s
+
+rawlines = None
+
+for l in sys.stdin:
+    try:
+        j = json.loads(l[:-1])
+        if DUMP_JSON:
+            print(l)
+        # accesslog
+        type=j.get('type', '')
+        if type == 'liberty_accesslog':
+            print(f"{gettimestamp(j)} {gethostname(j)} {j.get('type', '')} {j.get('ibm_requestFirstLine', '')} {j.get('ibm_userAgent', '')} {j.get('ibm_elapsedTime', '')}  {j.get('ibm_responseCode', '')} {j.get('correlationId', '')}")
+        else:
+            query_string=j.get('ibm_queryString', '')
+            if query_string:
+                query_string = '?' + query_string
+            print(f"{gettimestamp(j)} {gethostname(j)} {j.get('type', '')} [{j.get('logger_name', '')}] {j.get('ibm_uriPath', '')}{query_string} {j.get('ibm_responseCode', '')} {j.get('ibm_elapsedTime', '')} - {j.get('correlationId', '')} - {j.get('level', '')}: {j.get('message', '<no msg>')}")
+            stack_trace = getstacktrace(j)
+            if stack_trace:
+                for l in stack_trace.split('\n'):
+                    print("   ", l)
+    except json.decoder.JSONDecodeError:
+        l = l[:-1]
+        if rawlines is not None:
+            if l == ")":
+                print(decodeRawLines(rawlines))
+                print(l)
+                rawlines = None
+            else:  # FIXME check this is a raw data line
+                rawlines.append(l)
+        elif "Plaintext before ENCRYPTION (" in l or "Plaintext after DECRYPTION (" in l:
+            rawlines = []
+            print(l)
+        else:
+            print("LINE:", l[:-1])

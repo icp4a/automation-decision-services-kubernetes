@@ -161,7 +161,7 @@ You create the OLM resources in the following order:
 #### Catalog sources
 Add a catalog source for foundational services:
 ```yaml
-# IBM Cloud Foundational Services 3.23.1
+# IBM Cloud Foundational Services 3.23.2
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
@@ -175,7 +175,7 @@ spec:
   sourceType: grpc
   grpcPodConfig:                                           # Not for openshift
     securityContextConfig: restricted                      # Not for openshift
-  image: icr.io/cpopen/ibm-common-service-catalog@sha256:95ed8b2bd8e2e77f863557d27e591ea15dd667159d9c52059492533c6ba0f270  # CS 3.23.1
+  image: icr.io/cpopen/ibm-common-service-catalog@sha256:6b32fdacd80de2e4a38536557316a2346a0117d810127fc6b19cd72fe6c20bb9  # CS 3.23.2
   updateStrategy:
     registryPoll:
       interval: 45m
@@ -191,7 +191,7 @@ metadata:
   namespace: olm                           # openshift-marketplace for openshift
 spec:
   displayName: ibm-ads-operator
-  image: icr.io/cpopen/ibm-ads-operator-catalog@sha256:4ec6663aea3914da5c4aa5814bcfef8de6a85aabafeea0fe35c99bad20e860e7  # 22.0.2-IF003
+  image: icr.io/cpopen/ibm-ads-operator-catalog@sha256:c1163e547d903c5d9533570c674675a785e286ed562493404502da1aef79beea  # 22.0.2-IF004
   publisher: IBM
   sourceType: grpc
   grpcPodConfig:                            # Not for openshift
@@ -567,7 +567,11 @@ You must add a `requested-from-namespace` entry in the `namespaceMapping` sectio
 When it's done, you can relaunch the installation script with the `-i` command line switch (ignore) to preserve the configuration map you just edited. 
         
 If you want to override the current configuration map with what is needed for the current installation, use the `-f` (force) command line switch. 
-> Note: This action might break any other Automation Decision Services or CloudPak install in the same cluster.
+> Note: This action might break any other Automation Decision Services or CloudPak installation in the same cluster.
+
+### MustGather 
+
+The [must-gather](must-gather) folder contains a set of scripts to collect information for troubleshooting problems.  In particular, the `gather.sh` script assembles information in a `tar.gz` archive from your cluster setup and pod logs.  This archive can be sent to the IBM Support team for analysis.
 
 ## Uninstalling Automation Decision Services
 
