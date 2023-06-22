@@ -134,3 +134,82 @@ function wait_for_service_account() {
     wait_for_condition "${condition}" ${retries} ${sleep_time} "${wait_message}" "${success_message}" "${error_message}"
 }
 
+function create_catalog_source() {
+    local name=$1
+    local displayName=$2
+    local image=$3
+    local olm_namespace=$4
+    local is_openshift=$5
+
+    title "Creating catalog source ${name}..."
+    kubectl -n ${olm_namespace} delete catalogsource ${name} --ignore-not-found
+
+    if ${is_openshift}; then # No grpcPodConfig
+    kubectl apply -f - << EOF
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: CatalogSource
+  metadata:
+    name: ${name}
+    namespace: ${olm_namespace}
+    annotations:
+      bedrock_catalogsource_priority: '1'
+  spec:
+    displayName: ${displayName}
+    publisher: IBM
+    sourceType: grpc
+    image: ${image}
+    updateStrategy:
+      registryPoll:
+        interval: 45m
+    priority: 100
+EOF
+    else
+    # Adding grpcPodConfig
+    kubectl apply -f - << EOF
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: CatalogSource
+  metadata:
+    name: ${name}
+    namespace: ${olm_namespace}
+    annotations:
+      bedrock_catalogsource_priority: '1'
+  spec:
+    displayName: ${displayName}
+    publisher: IBM
+    sourceType: grpc
+    grpcPodConfig:
+      securityContextConfig: restricted
+    image: ${image}
+    updateStrategy:
+      registryPoll:
+        interval: 45m
+    priority: 100
+EOF
+    fi
+    if [[ $? -ne 0 ]]; then
+          error "Error creating catalog source ${name}."
+    fi
+    wait_for_pod ${olm_namespace} "${name}"
+}
+
+
+function create_namespace() {
+    local namespace=$1
+
+    ns=$(kubectl get ns ${namespace} -o=jsonpath={.metadata.name} 2>/dev/null)
+    if [[ -z ${ns} ]]; then
+      info "Creating namespace ${namespace}"
+      kubectl create namespace ${namespace}
+    fi
+}
+
+function is_sub_exist() {
+    local package_name=$1
+    if [ $# -eq 2 ]; then
+        local namespace=$2
+        local name=$(kuebctl get subscription.operators.coreos.com -n ${namespace} -o yaml -o jsonpath='{.items[*].spec.name}')
+    else
+        local name=$(kubectl get subscription.operators.coreos.com -A -o yaml -o jsonpath='{.items[*].spec.name}')
+    fi
+    is_exist=$(echo "$name" | grep -w "$package_name")
+}

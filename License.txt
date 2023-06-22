@@ -1,4 +1,4 @@
-The translated license terms can be viewed here: http://www14.software.ibm.com/cgi-bin/weblap/lap.pl?li_formnum=L-FBSM-XHWD26
+The translated license terms can be viewed here: http://www14.software.ibm.com/cgi-bin/weblap/lap.pl?li_formnum=L-XEUD-AU93LN
 
 IMPORTANT: READ CAREFULLY
 
@@ -24,13 +24,13 @@ LICENSE INFORMATION
 The Programs listed below are licensed under the following License Information terms and conditions in addition to the Program license terms previously agreed to by Client and IBM. If Client does not have previously agreed to license terms in effect for the Program, the International License Agreement for Evaluation of Programs (i125-5543-06) applies.
 
 Program Name (Program Number):
-IBM Automation Decision Services 22.0.2  (Evaluation)
+IBM Automation Decision Services 23.0.1 (Evaluation)
 
 The following standard terms apply to Licensee's use of the Program.
 
 Evaluation Period
 
-The evaluation period begins on the date that Licensee agrees to the terms of this Agreement and ends after 30 days.
+The evaluation period begins on the date that Licensee agrees to the terms of this Agreement and ends after 90 days.
 
 Multi-Product Install Image
 
@@ -65,7 +65,7 @@ LICENSE INFORMATION
 The Programs listed below are licensed under the following License Information terms and conditions in addition to the Program license terms previously agreed to by Client and IBM. If Client does not have previously agreed to license terms in effect for the Program, the International Program License Agreement (i125-3301-15) applies.
 
 Program Name (Program Number):
-IBM Automation Decision Services 22.0.2  ((5900-AUD))
+IBM Automation Decision Services 23.0.1 ((5900-AUD))
 
 The following standard terms apply to Licensee's use of the Program.
 
@@ -116,11 +116,11 @@ Cumulative Entitlements
 
 Establishment, and Monthly API Call entitlements are not alternative means for licensing the Program. Licensee must obtain the appropriate number of Establishment entitlements as well as the appropriate number of Monthly API Call.
 
-Use of Usage Metering Data
+Use of Usage Metering Data 
 
 The Program enables use of a usage metering dashboard (the "Dashboard") that enables the display and monitoring of certain data and metrics regarding Licensee's deployment and usage of IBM and non-IBM software programs, as well as the computing environment on which they are deployed ("Usage Metering Data"). Usage of the Dashboard requires registration on either the Red Hat Marketplace or IBM Software Central. Licensee's usage of the Dashboard and IBM's use and sharing of Usage Metering Data are governed by the terms of the Service Description for the Red Hat Marketplace, Operated by IBM, available here: https://www.ibm.com/support/customer/csol/terms?id=i126-8719, and if Licensee enables or uses the Dashboard, Licensee agrees to those terms.
 
 
-L/N: L-FBSM-XHWD26
-D/N: L-FBSM-XHWD26
-P/N: L-FBSM-XHWD26
+L/N: L-XEUD-AU93LN
+D/N: L-XEUD-AU93LN
+P/N: L-XEUD-AU93LN

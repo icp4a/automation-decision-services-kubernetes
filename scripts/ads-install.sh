@@ -2,29 +2,26 @@
 
 set -o nounset
 
-cs_catalog_image="icr.io/cpopen/ibm-common-service-catalog@sha256:6b32fdacd80de2e4a38536557316a2346a0117d810127fc6b19cd72fe6c20bb9"
-ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:c1163e547d903c5d9533570c674675a785e286ed562493404502da1aef79beea"
+cs_catalog_image="icr.io/cpopen/ibm-common-service-catalog@sha256:baec9f6a7b1710b1bba7f72ccc792c17830e563a1f85b8fb7bdb57505cde378a" # IBM Cloud Foundational Services 4.0
+ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:b08d355086fe7ed6daf547d8dc75d774ed851dfd22cab2ae12356dcddabb811f" # 23.0.1-GM
+edb_catalog_image="icr.io/cpopen/ibm-cpd-cloud-native-postgresql-operator-catalog@sha256:a06b9c054e58e089652f0e4400178c4a1b685255de9789b80fe5d5f526f9e732" # Cloud Native PostgresSQL 4.14.0+20230619 from https://github.com/IBM/cloud-pak/tree/master/repo/case/ibm-cloud-native-postgresql/4.14.0%2B20230616.111503
 
 current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source ${current_dir}/utils.sh
 
 function show_help() {
-    echo "Usage: $0 [-h] [-a] -n <ads-namespace> [-d <domain-name>] [-f|-i]"
+    echo "Usage: $0 [-h] [-a] -n <ads-namespace> [-d <domain-name>]"
     echo "  -a                    Accept license"
     echo "  -n <ads-namespace>    Namespace where ADS will be installed"
-    echo "  -d <domain-name>      Domain name where ADS url will be available. Mandatory unless using openshift."
-    echo "  -f                    Force common-service-maps override if it already exists."
-    echo "  -i                    Ignore common-service-maps. Mutually exclusive with -f option"
+    echo "  -d <domain-name>      Domain name where ADS url will be available. Mandatory unless using openshift where it is ignored."
 }
 
 accept_license=false
 ads_namespace=""
 domain_name=""
-force_cm=false
-ignore_cm=false
 is_openshift=false
 
-while getopts "h?an:d:fi" opt; do
+while getopts "h?an:d:" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -37,10 +34,6 @@ while getopts "h?an:d:fi" opt; do
         ;;
     d)  domain_name=$OPTARG
         ;;
-    f)  force_cm=true
-        ;;
-    i)  ignore_cm=true
-        ;;
     esac
 done
 
@@ -50,50 +43,8 @@ if [[ -z ${ads_namespace} ]]; then
     exit 1
 fi
 
-if ${force_cm} && ${ignore_cm}; then
-    error "-f and -i are mutually exclusive."
-    show_help
-    exit 1
-fi
-
-function apply_cs_cm() {
-   kubectl apply -f - <<EOF
-apiVersion: v1
-kind: ConfigMap
-metadata:
- name: common-service-maps
- namespace: kube-public
-data:
- common-service-maps.yaml: |
-   controlNamespace: cs-control
-   namespaceMapping:
-   - requested-from-namespace:
-     - ${ads_namespace}
-     map-to-common-service-namespace: ${ads_namespace}
-EOF
-  if [[ $? -ne 0 ]]; then
-        error "Error creating common-service-maps config map in kube-public namespace."
-  fi
-
-}
-
-function create_cs_config_maps() {
-    title "Creating common services config maps ..."
-
-    csm=$(kubectl -n kube-public get cm common-service-maps -o=jsonpath={.metadata.name} 2>/dev/null)
-    if [[ ! -z ${csm} ]]; then # config map exists
-      if ${force_cm}; then
-        info "overriding common-service-maps"
-        apply_cs_cm
-      elif ${ignore_cm}; then
-        info "ignoring common-service-maps"
-      else
-        error "common-service-maps already exists in kube-public namespace: it's not a fresh install, please review the documentation troubleshooting section."
-        exit 1
-      fi
-    else # config map does not exist
-      apply_cs_cm # create it
-    fi
+function create_cs_config_map() {
+    title "Creating common services config map ..."
 
     ns=$(kubectl get ns ${ads_namespace} -o=jsonpath={.metadata.name} 2>/dev/null)
     if [[ -z ${ns} ]]; then
@@ -131,101 +82,11 @@ EOF
   fi
 }
 
-
-function create_catalog_source() {
-  title "Creating catalog source ..."
-  kubectl -n olm delete catalogsource opencloud-operators --ignore-not-found
-
-  # IBM Cloud Foundational Services 3.23.1
-  if ${is_openshift}; then # No grpcPodConfig
-  kubectl apply -f - << EOF
-apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
-metadata:
-  name: opencloud-operators
-  namespace: ${olm_namespace}
-  annotations:
-    bedrock_catalogsource_priority: '1'
-spec:
-  displayName: IBMCS Operators
-  publisher: IBM
-  sourceType: grpc
-  image: ${cs_catalog_image}
-  updateStrategy:
-    registryPoll:
-      interval: 45m
-  priority: 100
-EOF
-  else
-  # Adding grpcPodConfig
-  kubectl apply -f - << EOF
-apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
-metadata:
-  name: opencloud-operators
-  namespace: ${olm_namespace}
-  annotations:
-    bedrock_catalogsource_priority: '1'
-spec:
-  displayName: IBMCS Operators
-  publisher: IBM
-  sourceType: grpc
-  grpcPodConfig:
-    securityContextConfig: restricted
-  image: ${cs_catalog_image}
-  updateStrategy:
-    registryPoll:
-      interval: 45m
-  priority: 100
-EOF
-  fi
-  if [[ $? -ne 0 ]]; then
-        error "Error creating common services catalog source."
-  fi
-
-  wait_for_pod ${olm_namespace} "opencloud-operators."
-
-  # ADS nightly build
-  if ${is_openshift}; then # No grpcPodConfig
-  kubectl apply -f - <<EOF
-apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
-metadata:
-  name: ibm-ads-operator-catalog
-  namespace: ${olm_namespace}
-spec:
-  displayName: ibm-ads-operator
-  image: ${ads_catalog_image}
-  publisher: IBM
-  sourceType: grpc
-  updateStrategy:
-    registryPoll:
-      interval: 45m
-EOF
-  else
-  kubectl apply -f - <<EOF
-apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
-metadata:
-  name: ibm-ads-operator-catalog
-  namespace: ${olm_namespace}
-spec:
-  displayName: ibm-ads-operator
-  image: ${ads_catalog_image}
-  publisher: IBM
-  sourceType: grpc
-  grpcPodConfig:
-    securityContextConfig: restricted
-  updateStrategy:
-    registryPoll:
-      interval: 45m
-EOF
-  fi
-  if [[ $? -ne 0 ]]; then
-        error "Error creating ADS catalog source."
-  fi
-
-  wait_for_pod ${olm_namespace} "ibm-ads-operator-catalog"
+function create_catalog_sources() {
+  title "Creating catalog sources ..."
+  create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${olm_namespace} ${is_openshift}
+  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${olm_namespace} ${is_openshift}
+  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator" ${ads_catalog_image} ${olm_namespace} ${is_openshift}
 }
 
 function create_operator_group() {
@@ -252,10 +113,10 @@ function create_subscription() {
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: ibm-ads-v22.2
+  name: ibm-ads-v23.1
   namespace: ${ads_namespace}
 spec:
-  channel: v22.2
+  channel: v23.1
   installPlanApproval: Automatic
   name: ibm-ads-kn-operator
   source: ibm-ads-operator-catalog
@@ -302,10 +163,31 @@ function check_prereqs() {
     else
       olm_namespace=$(kubectl get deployment -A | grep olm-operator | awk '{print $1}')
       if [[ -z "$olm_namespace" ]]; then
-        error "Cannot find OLM installation."
+        error "Cannot find OLM installation. Use ads-install-prereqs.sh to install one."
         exit 1
       fi
       success "OLM available under namespace ${olm_namespace}."
+    fi
+
+    ## Check license service
+    title "Checking if licensing service is installed in the cluster ..."
+
+    is_sub_exist "ibm-licensing-operator-app" # this will catch the packagenames of all ibm-licensing-operator-app
+    if [ $? -eq 0 ]; then
+        info "ok"
+    else
+        error "No licensing service detected, use ads-install-prereqs.sh to install one."
+        exit 1
+    fi
+
+    ## Check certificate manager
+    title "Checking if a certificate manager is installed in the cluster ..."
+    kubectl get crd | grep cert-manager
+    if [[ $? -ne 0 ]] ; then
+       error "No certificate manager detected, use ads-install-prereqs.sh to install one."
+       exit 1
+    else
+       info "ok"
     fi
 }
 
@@ -322,8 +204,8 @@ function check_license() {
 function install() {
     check_license
     check_prereqs
-    create_cs_config_maps
-    create_catalog_source
+    create_cs_config_map
+    create_catalog_sources
     create_operator_group
     create_subscription
 }

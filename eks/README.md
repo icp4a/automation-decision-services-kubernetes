@@ -1,6 +1,6 @@
 # EKS specific resources
 
-This directory contains resources specific to Amazon Elastic Kubernetes Service (EKS), such as sample [ingresses](ingress.yaml) with AWS Application Load Balancer (ALB) templates.   
+This directory contains resources specific to Amazon Elastic Kubernetes Service (EKS).  
 
 ## Storage class
 
@@ -42,12 +42,9 @@ spec:
              storage_class_name: efs-for-ads
 ```
 
-## Ingress and Application Load Balancer
+## Certificate management
 
-You must deploy the AWS Load Balancer Controller in your cluster to use Ingress.  
-Check the AWS Load Balancer Controller [documentation](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html) before you proceed.  
-
-Then, use a x509 certificate with a distinguished name that matches your `.subdomain.my-company.com` name, which is presented by your Ingresses.  
+You have to use a x509 certificate with a distinguished name that matches your `.subdomain.my-company.com` name, which is presented by your Network Load Balancer.  
 You can generate an untrusted certificate for testing purpose by using the following command:
 
 ```shell
@@ -59,10 +56,31 @@ and then, upload it to AWS Certificate Manager by using the following command:
 ```shell
 aws acm import-certificate --certificate fileb:///tmp/subdomain.crt --private-key fileb:///tmp/subdomain.key
 ```
-
-This command returns the Amazon Resource Name (ARN) of the registered certificate that you can reference in the `alb.ingress.kubernetes.io/certificate-arn` annotation on your Ingress descriptor.
+This command returns the Amazon Resource Name (ARN) of the registered certificate that you can reference in the `service.beta.kubernetes.io/aws-load-balancer-ssl-cert` annotation in following section.
 
 Then, create a wildcard DNS entry in your domain that corresponds to the domain declared
-in the `ibm-cpp-config` ConfigMap and your Ingresses.  
+in the `ibm-cpp-config` ConfigMap and your Ingresses.
 
-If the DNS zone is managed by AWS, create an _alias_ A record to the ALB.  (ALB IP addresses change over time. Therefore, a static A record is not applicable and becomes invalid soon).  For DNS zones that are not managed by AWS, a CNAME entry to the ALB automatic hostname is probably usable.
+If the DNS zone is managed by AWS, create an _alias_ A record to the NLB.  (NLB IP addresses change over time. Therefore, a static A record is not applicable and becomes invalid soon).  For DNS zones that are not managed by AWS, a CNAME entry to the NLB automatic hostname is probably usable.
+
+## Ingress and Network Load Balancer
+
+You must use [nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/) to serve ADS ingresses as url rewriting is needed which is not supported by AWS Ingress Controller.   
+You should review this AWS [blog](https://aws.amazon.com/blogs/containers/exposing-kubernetes-applications-part-3-nginx-ingress-controller/) that will guide you through nginx Ingress Controller installation used in conjunction with AWS NLB.
+For information, you should use nginx Ingress Controller Helm chart with a `values.yaml` file like:
+```yaml
+controller:
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-name: nginx-ingress
+      service.beta.kubernetes.io/aws-load-balancer-type: external
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:<region>:XXXXXXXX:certificate/XXXXXX-XXXXXXX-XXXXXXX-XXXXXXXX
+      service.beta.kubernetes.io/aws-load-balancer-ssl-ports: https
+      service.beta.kubernetes.io/aws-load-balancer-backend-protocol: ssl
+```
+
+Then you'll use [ads-generate-ingresses.sh](../scripts/ads-generate-ingresses.sh) script to obtain the ingresses definition you'll have to apply to your cluster.
+
