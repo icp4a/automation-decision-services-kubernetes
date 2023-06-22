@@ -1,0 +1,25 @@
+name: ibm-ads
+version: 1.1.0
+description: List of CASEs required for air gapped deployment of ADS 23.0.1
+cases:
+- name: ibm-ads
+  version: 1.1.0
+  launch: true
+- name: ibm-cloud-native-postgresql
+  version: 4.14.0+20230616.111503
+- name: ibm-cp-common-services
+  version: 4.0.0
+- name: ibm-cs-commonui
+  version: 4.0.0
+- name: ibm-cs-iam
+  version: 4.0.0
+- name: ibm-cs-mongodb
+  version: 4.0.0
+- name: ibm-events-operator
+  version: 4.6.1
+- name: ibm-zen
+  version: 3.0.0
+- name: ibm-cert-manager
+  version: 4.0.0
+- name: ibm-licensing
+  version: 4.0.0

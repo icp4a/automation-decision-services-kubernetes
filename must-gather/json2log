@@ -25,7 +25,9 @@ def gettimestamp(e):
         return e['ibm_datetime']
 
 def gethostname(e):
-    h = e['host']
+    h = ''
+    if 'host' in e:
+        h = e['host']
     try:
         return h['name']
     except TypeError:
