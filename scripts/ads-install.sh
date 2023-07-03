@@ -2,8 +2,8 @@
 
 set -o nounset
 
-cs_catalog_image="icr.io/cpopen/ibm-common-service-catalog@sha256:6b32fdacd80de2e4a38536557316a2346a0117d810127fc6b19cd72fe6c20bb9"
-ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:c1163e547d903c5d9533570c674675a785e286ed562493404502da1aef79beea"
+cs_catalog_image="icr.io/cpopen/ibm-common-service-catalog@sha256:cc3491ee7b448c3c8db43242d13e9d5d13a37ad9e67d166744d9b162887ed7e7"
+ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:6c010a6a0a8c4784c28dfb8415b1a5f400ea5e56f2bd6d89aa686aedccb92bd4"
 
 current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source ${current_dir}/utils.sh

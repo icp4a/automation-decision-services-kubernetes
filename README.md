@@ -175,7 +175,7 @@ spec:
   sourceType: grpc
   grpcPodConfig:                                           # Not for openshift
     securityContextConfig: restricted                      # Not for openshift
-  image: icr.io/cpopen/ibm-common-service-catalog@sha256:6b32fdacd80de2e4a38536557316a2346a0117d810127fc6b19cd72fe6c20bb9  # CS 3.23.2
+  image: icr.io/cpopen/ibm-common-service-catalog@sha256:cc3491ee7b448c3c8db43242d13e9d5d13a37ad9e67d166744d9b162887ed7e7  # CS 3.23.4
   updateStrategy:
     registryPoll:
       interval: 45m
@@ -191,7 +191,7 @@ metadata:
   namespace: olm                           # openshift-marketplace for openshift
 spec:
   displayName: ibm-ads-operator
-  image: icr.io/cpopen/ibm-ads-operator-catalog@sha256:c1163e547d903c5d9533570c674675a785e286ed562493404502da1aef79beea  # 22.0.2-IF004
+  image: icr.io/cpopen/ibm-ads-operator-catalog@sha256:6c010a6a0a8c4784c28dfb8415b1a5f400ea5e56f2bd6d89aa686aedccb92bd4  # 22.0.2-IF006
   publisher: IBM
   sourceType: grpc
   grpcPodConfig:                            # Not for openshift
