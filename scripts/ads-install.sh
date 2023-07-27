@@ -3,7 +3,7 @@
 set -o nounset
 
 cs_catalog_image="icr.io/cpopen/ibm-common-service-catalog@sha256:baec9f6a7b1710b1bba7f72ccc792c17830e563a1f85b8fb7bdb57505cde378a" # IBM Cloud Foundational Services 4.0
-ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:b08d355086fe7ed6daf547d8dc75d774ed851dfd22cab2ae12356dcddabb811f" # 23.0.1-GM
+ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:4d753c6d20a2afb1db97e50ef80662c2ff64630880dd424116d79a62a86df37b" # 23.0.1-IF001
 edb_catalog_image="icr.io/cpopen/ibm-cpd-cloud-native-postgresql-operator-catalog@sha256:a06b9c054e58e089652f0e4400178c4a1b685255de9789b80fe5d5f526f9e732" # Cloud Native PostgresSQL 4.14.0+20230619 from https://github.com/IBM/cloud-pak/tree/master/repo/case/ibm-cloud-native-postgresql/4.14.0%2B20230616.111503
 
 current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
