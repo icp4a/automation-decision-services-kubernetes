@@ -9,7 +9,7 @@ There are four main directories:
 - **Scripts**: Scripts for installing Automation Decision Services.
 - **Descriptors**: Sample YAML files for minimum custom resources (CR) and fully customized CR.
 - **EKS**: Resources that are specific to Amazon Elastic Kubernetes Service (EKS).
-- **Airgap**: Resources that are used for an air gappped (offline) deployment.
+- **Airgap**: Resources that are used for an air gapped (offline) deployment.
 - **Must-gather**: Instructions and scripts to gather information to diagnose issues.
 
 ### MustGather

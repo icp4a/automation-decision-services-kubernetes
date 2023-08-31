@@ -114,7 +114,7 @@ EOF
     wait_for_operator ibm-cert-manager ibm-cert-manager-operator
   fi
 
-  if ! ${existing_cert_manager}; then
+  if ! ${existing_licensing_service}; then
     kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
