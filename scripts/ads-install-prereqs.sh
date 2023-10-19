@@ -2,10 +2,8 @@
 
 set -o nounset
 
-licensing_catalog_image="icr.io/cpopen/ibm-licensing-catalog@sha256:81d170807fad802496814ef35ab5877684031c178117eb3c8dc9bdeddbb269a0" # IBM License Manager 4.0.0
-cert_manager_catalog_image="icr.io/cpopen/ibm-cert-manager-operator-catalog@sha256:9ecbd78444208da0e2981b7a9060d2df960e09b59ac9990a959df069864085c2" # IBM Certificate Manager 4.0.0
-
 current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source ${current_dir}/constants.sh
 source ${current_dir}/utils.sh
 
 function show_help() {
@@ -41,10 +39,10 @@ fi
 function create_catalog_sources() {
   title "Creating pre-req catalog sources ..."
   if ! ${existing_cert_manager}; then
-    create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-4.0.0 ${cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
+    create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-${common_services_channel} ${cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
   fi
   if ! ${existing_licensing_service}; then
-    create_catalog_source ibm-licensing-catalog ibm-licensing-4.0.0 ${licensing_catalog_image} ${olm_namespace} ${is_openshift}
+    create_catalog_source ibm-licensing-catalog ibm-licensing-${common_services_channel} ${licensing_catalog_image} ${olm_namespace} ${is_openshift}
   fi
 }
 
@@ -99,12 +97,12 @@ metadata:
   name: ibm-cert-manager-operator
   namespace: ibm-cert-manager
 spec:
-  channel: v4.0
+  channel: ${common_services_channel}
   installPlanApproval: Automatic
   name: ibm-cert-manager-operator
   source: ibm-cert-manager-catalog
   sourceNamespace: ${olm_namespace}
-  startingCSV: ibm-cert-manager-operator.v4.0.0
+  startingCSV: ibm-cert-manager-operator.${common_services_channel}.0
 EOF
     if [[ $? -ne 0 ]]; then
         error "Error creating ibm-cert-manager subscription."
@@ -122,12 +120,12 @@ metadata:
   name: ibm-licensing-operator-app
   namespace: ${licensing_namespace}
 spec:
-  channel: v4.0
+  channel: ${common_services_channel}
   installPlanApproval: Automatic
   name: ibm-licensing-operator-app
   source: ibm-licensing-catalog
   sourceNamespace: ${olm_namespace}
-  startingCSV: ibm-licensing-operator.v4.0.0
+  startingCSV: ibm-licensing-operator.${common_services_channel}.0
 EOF
 
     if [[ $? -ne 0 ]]; then

@@ -60,6 +60,7 @@ function wait_for_condition() {
 
         if [[ ( ${retries} -eq 0 ) && ( -z "${result}" ) ]]; then
             error "${error_message}"
+            exit 2
         fi
 
         sleep ${sleep_time}
@@ -138,11 +139,11 @@ function create_catalog_source() {
     local name=$1
     local displayName=$2
     local image=$3
-    local olm_namespace=$4
+    local namespace=$4
     local is_openshift=$5
 
     title "Creating catalog source ${name}..."
-    kubectl -n ${olm_namespace} delete catalogsource ${name} --ignore-not-found
+    kubectl -n ${namespace} delete catalogsource ${name} --ignore-not-found
 
     if ${is_openshift}; then # No grpcPodConfig
     kubectl apply -f - << EOF
@@ -150,7 +151,7 @@ function create_catalog_source() {
   kind: CatalogSource
   metadata:
     name: ${name}
-    namespace: ${olm_namespace}
+    namespace: ${namespace}
     annotations:
       bedrock_catalogsource_priority: '1'
   spec:
@@ -170,7 +171,7 @@ EOF
   kind: CatalogSource
   metadata:
     name: ${name}
-    namespace: ${olm_namespace}
+    namespace: ${namespace}
     annotations:
       bedrock_catalogsource_priority: '1'
   spec:
@@ -189,7 +190,7 @@ EOF
     if [[ $? -ne 0 ]]; then
           error "Error creating catalog source ${name}."
     fi
-    wait_for_pod ${olm_namespace} "${name}"
+    wait_for_pod ${namespace} "${name}"
 }
 
 
@@ -212,4 +213,33 @@ function is_sub_exist() {
         local name=$(kubectl get subscription.operators.coreos.com -A -o yaml -o jsonpath='{.items[*].spec.name}')
     fi
     is_exist=$(echo "$name" | grep -w "$package_name")
+}
+
+function create_ads_subscription() {
+    local channel=$1
+    local namespace=$2
+
+    title "Creating ADS subscription ..."
+    kubectl apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ibm-ads-${channel}
+  namespace: ${namespace}
+spec:
+  channel: ${channel}
+  installPlanApproval: Automatic
+  name: ibm-ads-kn-operator
+  source: ibm-ads-operator-catalog
+  sourceNamespace: ${namespace}
+EOF
+    if [[ $? -ne 0 ]]; then
+        error "ADS Operator subscription could not be created."
+    fi
+
+    info "Waiting for ADS subscription to become active."
+
+    wait_for_operator "${namespace}" "ibm-ads-kn-operator"
+    wait_for_operator "${namespace}" "ibm-common-service-operator"
+    wait_for_operator "${namespace}" "operand-deployment-lifecycle-manager"
 }
