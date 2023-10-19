@@ -2,11 +2,8 @@
 
 set -o nounset
 
-cs_catalog_image="icr.io/cpopen/ibm-common-service-catalog@sha256:baec9f6a7b1710b1bba7f72ccc792c17830e563a1f85b8fb7bdb57505cde378a" # IBM Cloud Foundational Services 4.0
-ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:cb6562b2ae4e218cc7df682c8d2a80a8c2f37e5b458fda0af74a2941aa592896" # 23.0.1-IF003
-edb_catalog_image="icr.io/cpopen/ibm-cpd-cloud-native-postgresql-operator-catalog@sha256:a06b9c054e58e089652f0e4400178c4a1b685255de9789b80fe5d5f526f9e732" # Cloud Native PostgresSQL 4.14.0+20230619 from https://github.com/IBM/cloud-pak/tree/master/repo/case/ibm-cloud-native-postgresql/4.14.0%2B20230616.111503
-
 current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source ${current_dir}/constants.sh
 source ${current_dir}/utils.sh
 
 function show_help() {
@@ -84,9 +81,9 @@ EOF
 
 function create_catalog_sources() {
   title "Creating catalog sources ..."
-  create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${olm_namespace} ${is_openshift}
-  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${olm_namespace} ${is_openshift}
-  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator" ${ads_catalog_image} ${olm_namespace} ${is_openshift}
+  create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
+  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${ads_namespace} ${is_openshift}
+  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator-${ads_channel}" ${ads_catalog_image} ${ads_namespace} ${is_openshift}
 }
 
 function create_operator_group() {
@@ -106,33 +103,6 @@ EOF
         error "Error creating operator group."
     fi
 }
-
-function create_subscription() {
-    title "Creating subscription ..."
-    kubectl apply -f - <<EOF
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: ibm-ads-v23.1
-  namespace: ${ads_namespace}
-spec:
-  channel: v23.1
-  installPlanApproval: Automatic
-  name: ibm-ads-kn-operator
-  source: ibm-ads-operator-catalog
-  sourceNamespace: ${olm_namespace}
-EOF
-    if [[ $? -ne 0 ]]; then
-        error "ADS Operator subscription could not be created."
-    fi
-
-    info "Waiting for ADS subscription to become active."
-
-    wait_for_operator "${ads_namespace}" "ibm-ads-kn-operator"
-    wait_for_operator "${ads_namespace}" "ibm-common-service-operator"
-    wait_for_operator "${ads_namespace}" "operand-deployment-lifecycle-manager"
-}
-
 
 function check_prereqs() {
     title "Checking prereqs ..."
@@ -207,7 +177,7 @@ function install() {
     create_cs_config_map
     create_catalog_sources
     create_operator_group
-    create_subscription
+    create_ads_subscription ${ads_channel} ${ads_namespace}
 }
 
 # --- Run ---
