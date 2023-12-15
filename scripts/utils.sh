@@ -96,7 +96,7 @@ function wait_for_configmap() {
 function wait_for_pod() {
     local namespace=$1
     local name=$2
-    local condition="kubectl -n ${namespace} get po --no-headers --ignore-not-found | egrep 'Running|Completed|Succeeded' | grep ^${name}"
+    local condition="kubectl -n ${namespace} get po --no-headers --ignore-not-found | grep -E 'Running|Completed|Succeeded' | grep ^${name}"
     local retries=30
     local sleep_time=30
     local total_time_mins=$(( sleep_time * retries / 60))
@@ -110,7 +110,7 @@ function wait_for_pod() {
 function wait_for_operator() {
     local namespace=$1
     local operator_name=$2
-    local condition="kubectl -n ${namespace} get csv --no-headers --ignore-not-found | egrep 'Succeeded' | grep ^${operator_name}"
+    local condition="kubectl -n ${namespace} get csv --no-headers --ignore-not-found | grep -E 'Succeeded' | grep ^${operator_name}"
     local retries=50
     local sleep_time=10
     local total_time_mins=$(( sleep_time * retries / 60))
@@ -139,11 +139,11 @@ function create_catalog_source() {
     local name=$1
     local displayName=$2
     local image=$3
-    local namespace=$4
+    local olm_namespace=$4
     local is_openshift=$5
 
     title "Creating catalog source ${name}..."
-    kubectl -n ${namespace} delete catalogsource ${name} --ignore-not-found
+    kubectl -n ${olm_namespace} delete catalogsource ${name} --ignore-not-found
 
     if ${is_openshift}; then # No grpcPodConfig
     kubectl apply -f - << EOF
@@ -151,7 +151,7 @@ function create_catalog_source() {
   kind: CatalogSource
   metadata:
     name: ${name}
-    namespace: ${namespace}
+    namespace: ${olm_namespace}
     annotations:
       bedrock_catalogsource_priority: '1'
   spec:
@@ -171,7 +171,7 @@ EOF
   kind: CatalogSource
   metadata:
     name: ${name}
-    namespace: ${namespace}
+    namespace: ${olm_namespace}
     annotations:
       bedrock_catalogsource_priority: '1'
   spec:
@@ -190,7 +190,7 @@ EOF
     if [[ $? -ne 0 ]]; then
           error "Error creating catalog source ${name}."
     fi
-    wait_for_pod ${namespace} "${name}"
+    wait_for_pod ${olm_namespace} "${name}"
 }
 
 
@@ -243,3 +243,66 @@ EOF
     wait_for_operator "${namespace}" "ibm-common-service-operator"
     wait_for_operator "${namespace}" "operand-deployment-lifecycle-manager"
 }
+
+function create_catalog_sources() {
+  title "Creating catalog sources ..."
+  create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
+  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${ads_namespace} ${is_openshift}
+  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator-${ads_channel}" ${ads_catalog_image} ${ads_namespace} ${is_openshift}
+}
+
+function create_licensing_service_subscription() {
+  local namespace=$1
+  local olm_namespace=$2
+  local channel=$3
+
+  kubectl apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ibm-licensing-operator-app
+  namespace: ${namespace}
+spec:
+  channel: ${channel}
+  installPlanApproval: Automatic
+  name: ibm-licensing-operator-app
+  source: ibm-licensing-catalog
+  sourceNamespace: ${olm_namespace}
+  startingCSV: ibm-licensing-operator.${channel}.0
+EOF
+
+  if [[ $? -ne 0 ]]; then
+    error "Error creating ibm-licensing subscription."
+  fi
+
+  info "Waiting for ibm-licensing subscription to become active."
+  wait_for_operator ${namespace} ibm-licensing-operator
+}
+
+
+function create_ibm_certificate_manager_subscription() {
+  local olm_namespace=$1
+  local channel=$2
+
+  kubectl apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ibm-cert-manager-operator
+  namespace: ibm-cert-manager
+spec:
+  channel: ${channel}
+  installPlanApproval: Automatic
+  name: ibm-cert-manager-operator
+  source: ibm-cert-manager-catalog
+  sourceNamespace: ${olm_namespace}
+  startingCSV: ibm-cert-manager-operator.${channel}.0
+EOF
+  if [[ $? -ne 0 ]]; then
+      error "Error creating ibm-cert-manager subscription."
+  fi
+
+  info "Waiting for ibm-cert-manager subscription to become active."
+  wait_for_operator ibm-cert-manager ibm-cert-manager-operator
+}
+

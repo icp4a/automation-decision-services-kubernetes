@@ -79,13 +79,6 @@ EOF
   fi
 }
 
-function create_catalog_sources() {
-  title "Creating catalog sources ..."
-  create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
-  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${ads_namespace} ${is_openshift}
-  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator-${ads_channel}" ${ads_catalog_image} ${ads_namespace} ${is_openshift}
-}
-
 function create_operator_group() {
     title "Creating operator group ..."
     kubectl apply -f - <<EOF

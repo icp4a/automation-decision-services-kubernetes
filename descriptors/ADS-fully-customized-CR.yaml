@@ -22,8 +22,8 @@ metadata:
   name: "sample"
 
 spec:
-  # Required: if this value is not "23.0.1" the operator ignores this resource.
-  version: "23.0.1"
+  # Required: if this value is not "23.0.2" the operator ignores this resource.
+  version: "23.0.2"
 
   license:
     # Required: used to accept license, the only valid value only is the boolean true.

@@ -56,37 +56,44 @@ function check_prereqs() {
 }
 
 function check_subscription() {
-    local channel=$(kubectl get sub ibm-ads-${ads_channel} -n ${ads_namespace} -o jsonpath='{.spec.channel}')
-    if [ "${channel}" = "${ads_channel}" ]; then
+    local channel=$(kubectl get sub ibm-ads-${ads_channel_previous_version} -n ${ads_namespace} -o jsonpath='{.spec.channel}')
+    if [ "${channel}" = "${ads_channel_previous_version}" ]; then
         info "Found ADS subscription to the expected channel."
     else
-        error "Cannot find ADS subscription in namespace ${ads_namespace} or its channel is not ${ads_channel}."
+        error "Cannot find ADS subscription in namespace ${ads_namespace} or its channel is not ${ads_channel_previous_version}. Are you upgrading from previous version?"
+        exit 1
     fi
 }
 
-function upgrade_catalog_sources() {
-    create_catalog_source "opencloud-operators-${common_services_channel}" "IBMCS Operators ${common_services_channel}" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
-    create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${ads_namespace} ${is_openshift}
-    create_catalog_source "ibm-ads-operator-catalog" "ibm-ads-operator-${ads_channel}" ${ads_catalog_image} ${ads_namespace} ${is_openshift}
-}
-
 function upgrade_subscription() {
-    local sub=$(kubectl get sub ibm-ads-${ads_channel} -n ${ads_namespace} -o jsonpath='{.metadata.name}')
+    local sub=$(kubectl get sub ibm-ads-${ads_channel_previous_version} -n ${ads_namespace} -o jsonpath='{.metadata.name}')
+    kubectl delete sub ${sub} -n ${ads_namespace}
+
+    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
+    kubectl delete sub ${sub} -n ${ads_namespace}
+
+    sub=$(kubectl get sub -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
     kubectl delete sub ${sub} -n ${ads_namespace}
     
-    local csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-ads-kn-operator.${ads_channel} | cut -d ' ' -f 1)
+    local csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-ads-kn-operator.${ads_channel_previous_version} | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n ${ads_namespace}
+
+    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n ${ads_namespace}
+
+    csv=$(kubectl get csv -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
     kubectl delete csv ${csv} -n ${ads_namespace}
 
     create_ads_subscription ${ads_channel} ${ads_namespace}
 }
 
 
-function upgrade_to_ifix() {
+function upgrade {
     check_prereqs
     check_subscription
-    upgrade_catalog_sources
+    create_catalog_sources
     upgrade_subscription 
 }
 
 # --- Run ---
-upgrade_to_ifix
+upgrade

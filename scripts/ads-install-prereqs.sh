@@ -36,7 +36,7 @@ if ! ${accept_license}; then
   exit 1
 fi
 
-function create_catalog_sources() {
+function create_pre_req_catalog_sources() {
   title "Creating pre-req catalog sources ..."
   if ! ${existing_cert_manager}; then
     create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-${common_services_channel} ${cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
@@ -90,53 +90,13 @@ function create_subscriptions() {
     title "Creating subscription if needed ..."
 
   if ! ${existing_cert_manager}; then
-    kubectl apply -f - <<EOF
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: ibm-cert-manager-operator
-  namespace: ibm-cert-manager
-spec:
-  channel: ${common_services_channel}
-  installPlanApproval: Automatic
-  name: ibm-cert-manager-operator
-  source: ibm-cert-manager-catalog
-  sourceNamespace: ${olm_namespace}
-  startingCSV: ibm-cert-manager-operator.${common_services_channel}.0
-EOF
-    if [[ $? -ne 0 ]]; then
-        error "Error creating ibm-cert-manager subscription."
-    fi
-
-    info "Waiting for ibm-cert-manager subscription to become active."
-    wait_for_operator ibm-cert-manager ibm-cert-manager-operator
+    create_ibm_certificate_manager_subscription ${olm_namespace} ${common_services_channel} 
   fi
 
   if ! ${existing_licensing_service}; then
-    kubectl apply -f - <<EOF
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: ibm-licensing-operator-app
-  namespace: ${licensing_namespace}
-spec:
-  channel: ${common_services_channel}
-  installPlanApproval: Automatic
-  name: ibm-licensing-operator-app
-  source: ibm-licensing-catalog
-  sourceNamespace: ${olm_namespace}
-  startingCSV: ibm-licensing-operator.${common_services_channel}.0
-EOF
-
-    if [[ $? -ne 0 ]]; then
-      error "Error creating ibm-licensing subscription."
-    fi
-
-    info "Waiting for ibm-licensing subscription to become active."
-    wait_for_operator ${licensing_namespace} ibm-licensing-operator
+    create_licensing_service_subscription ${licensing_namespace} ${olm_namespace} ${common_services_channel}
   fi
 }
-
 
 function check_prereqs() {
     title "Checking prereqs ..."
@@ -156,7 +116,7 @@ function check_prereqs() {
       olm_namespace=$(kubectl get deployment -A | grep olm-operator | awk '{print $1}')
       if [[ -z "$olm_namespace" ]]; then
         info "Cannot find OLM installation. Installing one"
-        curl -L https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.23.1/install.sh -o install.sh
+        curl -L https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.25.0/install.sh -o install.sh
         chmod +x install.sh
         ./install.sh v0.23.1
         olm_install_success=$?
@@ -200,7 +160,7 @@ function install() {
     check_prereqs
     check_cert_manager
     check_licensing_service
-    create_catalog_sources
+    create_pre_req_catalog_sources
     create_operator_groups
     create_subscriptions
 }
