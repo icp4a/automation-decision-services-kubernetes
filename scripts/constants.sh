@@ -8,4 +8,4 @@ cert_manager_catalog_image="icr.io/cpopen/ibm-cert-manager-operator-catalog@sha2
 
 cs_catalog_image="icr.io/cpopen/ibm-common-service-catalog@sha256:baec9f6a7b1710b1bba7f72ccc792c17830e563a1f85b8fb7bdb57505cde378a" # IBM Cloud Foundational Services 4.0
 edb_catalog_image="icr.io/cpopen/ibm-cpd-cloud-native-postgresql-operator-catalog@sha256:a06b9c054e58e089652f0e4400178c4a1b685255de9789b80fe5d5f526f9e732" # Cloud Native PostgresSQL 4.14.0+20230619 from https://github.com/IBM/cloud-pak/tree/master/repo/case/ibm-cloud-native-postgresql/4.14.0%2B20230616.111503
-ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:8937eda83f290cf0af4b32e65f90ad8e5044a5377c005858030c6d12d6ce2206" # 23.0.1-IF005
+ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:d6d5c971fa393172ec02ce163c2c8ea0188979315833a106be304a3c619ebd9e" # 23.0.1-IF006
