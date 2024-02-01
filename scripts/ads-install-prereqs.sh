@@ -116,9 +116,9 @@ function check_prereqs() {
       olm_namespace=$(kubectl get deployment -A | grep olm-operator | awk '{print $1}')
       if [[ -z "$olm_namespace" ]]; then
         info "Cannot find OLM installation. Installing one"
-        curl -L https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.25.0/install.sh -o install.sh
+        curl -L "https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${olm_version}/install.sh" -o install.sh
         chmod +x install.sh
-        ./install.sh v0.23.1
+        ./install.sh "${olm_version}"
         olm_install_success=$?
         rm -f install.sh
         olm_namespace="olm"
@@ -126,6 +126,13 @@ function check_prereqs() {
             error "Error installing OLM."
             exit 1
           fi
+      else
+        # Check if it is a supported version
+        olm_version=$(kubectl get csv packageserver -n $olm_namespace -o yaml -o jsonpath='{.spec.version}')
+        if (( $(bc <<< "${olm_version:2} < ${olm_minimal_version:3}") )); then
+            error "Detected olm version v${olm_version} is less than supported minimal version ${olm_minimal_version}. You can not install without upgrading OLM version in your cluster."
+            exit 1
+        fi
       fi
       success "OLM available under namespace ${olm_namespace}."
     fi
