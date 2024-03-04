@@ -53,6 +53,49 @@ function check_prereqs() {
       fi
       success "OLM available under namespace ${olm_namespace}."
     fi
+
+   # Check licensing service version
+    local vls=$(get_licensing_service_version "")
+    if [[ "$vls" != "${licensing_service_target_version}" ]]; then
+        if [[ "$vls" == "unknown" ]]; then
+            error "Cannot find licensing version in your cluster, is it installed?"
+            exit 1
+        else
+            error "Detected licensing service version ${vls} which is not ${licensing_service_target_version}, please upgrade first pre-requisites with ads-upgrade-prereqs.sh script."
+            exit 1
+        fi
+    else
+        success "Detected licensing service version ${vls}."
+    fi
+
+    ## Check certificate manager
+    local cert_manager_csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f1)
+    if [[ -z ${cert_manager_csv} ]]; then
+        info "Not using IBM cert manager."
+    else
+        vcm=${cert_manager_csv: -5}
+        if [[ "$vcm" == "${cert_manager_target_version}" ]]; then
+            success "Detected IBM certificate manager v${cert_manager_target_version}."
+        else
+            error "Detected IBM certificate manager version ${vcm} wich is not ${cert_manager_target_version}. Please upgrade first pre-requisites with ads-upgrade-prereqs.sh script."
+            exit 1
+        fi
+    fi
+
+    # Check Common services version
+    local vcs=$(get_common_service_version ${ads_namespace})
+    local truncated_vcs=${vcs:0:3}
+    if [[ "${truncated_vcs}" != "4.0" ]]; then
+        if [[ "$vcs" == "unknown" ]]; then
+            error "Cannot find common services version in namespace ${ads_namespace}, is ADS installed in this namespace?"
+            exit 1
+        else
+            error "Detected common services version ${vcs} in namespace ${ads_namespace} which is not 4.0, are you upgrading from a ${ads_channel_previous_version} version?"
+            exit 1
+        fi
+    else
+        success "Detected common services version ${vcs}."
+    fi
 }
 
 function check_subscription() {
@@ -60,39 +103,17 @@ function check_subscription() {
     if [ "${channel}" = "${ads_channel_previous_version}" ]; then
         info "Found ADS subscription to the expected channel."
     else
-        error "Cannot find ADS subscription in namespace ${ads_namespace} or its channel is not ${ads_channel_previous_version}. Are you upgrading from previous version?"
+        error "Cannot find ADS subscription in namespace ${ads_namespace} or its channel is not ${ads_channel_previous_version}. Are you upgrading from a ${ads_channel_previous_version} version?"
         exit 1
     fi
-}
-
-function upgrade_subscription() {
-    local sub=$(kubectl get sub ibm-ads-${ads_channel_previous_version} -n ${ads_namespace} -o jsonpath='{.metadata.name}')
-    kubectl delete sub ${sub} -n ${ads_namespace}
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
-    
-    local csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-ads-kn-operator.${ads_channel_previous_version} | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    create_ads_subscription ${ads_channel} ${ads_namespace}
 }
 
 
 function upgrade {
     check_prereqs
     check_subscription
-    create_catalog_sources
-    upgrade_subscription 
+    create_ads_catalog_sources
+    upgrade_ads_subscription ${ads_channel_previous_version} ${ads_channel}
 }
 
 # --- Run ---

@@ -14,7 +14,8 @@ function show_help() {
 
 licensing_namespace="ibm-licensing"
 is_openshift=false
-is_ibm_cert_manager=false
+upgrade_licensing_service=false
+upgrade_cert_manager=false
 
 while getopts "h?n:" opt; do
     case "$opt" in
@@ -49,82 +50,85 @@ function check_prereqs() {
       success "OLM available under namespace ${olm_namespace}."
     fi
 
-    ## Check Licensing service
-    local licensing_csv=$(kubectl get csv -n ${licensing_namespace} ibm-licensing-operator.${common_services_previous_version})
-    if [[ -z ${licensing_csv} ]]; then
-      error "Cannot find a licensing service insallation in ${licensing_namespace}."
-      exit 1
+    # Check if licensing service version is one we support to upgrade or if it is already the one we target.
+    local vls=$(get_licensing_service_version ${licensing_namespace})
+    if [[ "$vls" == "${licensing_service_target_version}" ]]; then
+      success "Licensing service is already version ${licensing_service_target_version}, leave it untouched."
+      upgrade_licensing_service=false
+    else
+      if [[ "$vls" != "4.0.0" && "$vls" != "4.2.0" ]]; then
+          if [[ "$vls" == "unknown" ]]; then
+              error "Cannot find licensing version in your cluster, is it installed?"
+              exit 1
+          else
+              error "Detected licensing service version ${vls} which is neither 4.0.0 nor 4.2.0. Cannot upgrade."
+              exit 1
+          fi
+      else
+        success "Licensing service v${vls} found. Will upgrade it."
+        upgrade_licensing_service=true
+      fi
     fi
-    success "Licensing service version ${common_services_previous_version} found in ${licensing_namespace}."
 
-    ## Check Certificate manager
-    local cert_manager_csv=$(kubectl get csv -n ${licensing_namespace} ibm-cert-manager-operator.${common_services_previous_version}) # available in all namespaces, so also in ibm-licensing one.
+    ## Check Certificate manager (no proper label to select so that we fall back to a grep)
+    local cert_manager_csv=$(kubectl get csv -n ${licensing_namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f1) # available in all namespaces, so also in ibm-licensing one.
     if [[ -z ${cert_manager_csv} ]]; then
-      is_ibm_cert_manager=false
+      upgrade_cert_manager=false
       info "IBM certificate manager is not used, it will not be upgraded."
     else
-      is_ibm_cert_manager=true
-      success "IBM certificate manager version ${common_services_previous_version} found."
+      vcm=${cert_manager_csv: -5}
+      if [[ "$vcm" == "${cert_manager_target_version}" ]]; then
+        success "IBM Certificate manager is already version ${cert_manager_target_version}, leave it untouched."
+        upgrade_cert_manager=false
+      else
+        success "IBM certificate manager version v${vcm} found. Will upgrade it."
+        upgrade_cert_manager=true
+      fi
     fi
 }
 
-function check_subscription() {
-    local channel=$(kubectl get sub ibm-licensing-operator-app -n ${licensing_namespace} -o jsonpath='{.spec.channel}')
-    if [ "${channel}" = "${common_services_previous_version:0:4}" ]; then
-        info "Found licensing service subscription to the expected channel."
-    else
-        error "Cannot find licensing service subscription in namespace ${licensing_namespace} or its channel is not ${common_services_previous_version:0:4}. Are you upgrading from previous version?"
-        exit 1
-    fi
-
-    if ${is_ibm_cert_manager}; then
-        local cert_manager_sub_namespace=$(kubectl get sub -A | grep ibm-cert-manager-operator | cut -d " " -f1)
-        channel=$(kubectl get sub ibm-cert-manager-operator -n ${cert_manager_sub_namespace} -o jsonpath='{.spec.channel}')
-        if [ "${channel}" = "${common_services_previous_version:0:4}" ]; then
-            info "Found IBM certificate manager subscription to the expected channel."
-        else
-            error "Cannot find IBM certificate manager subscription in namespace ${cert_manager_sub_namespace} or its channel is not ${common_services_previous_version:0:4}. Are you upgrading from previous version?"
-            exit 1
-        fi
-    fi
-}
-
-function upgrade_pre_req_catalog_sources() {
-  title "Creating pre-req catalog sources ..."
-  create_catalog_source ibm-licensing-catalog ibm-licensing-${common_services_channel} ${licensing_catalog_image} ${olm_namespace} ${is_openshift}
-  if ${is_ibm_cert_manager}; then
-    create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-${common_services_channel} ${cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
+function upgrade_prereqs_catalog_sources() {
+  if ${upgrade_licensing_service}; then
+    title "Creating licensing service catalog sources..."
+    create_catalog_source ibm-licensing-catalog ibm-licensing-${licensing_service_channel} ${licensing_catalog_image} ${olm_namespace} ${is_openshift}
+  fi
+  if ${upgrade_cert_manager}; then
+    title "Creating IBM certificate manager catalog sources..."
+    create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-${cert_manager_channel} ${cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
   fi
 }
 
 
-function upgrade_subscription() {
-    local sub=$(kubectl get sub ibm-licensing-operator-app -n ${licensing_namespace} -o jsonpath='{.metadata.name}')
-    kubectl delete sub ${sub} -n ${licensing_namespace}
+function upgrade_subscription_prereqs() {
+    if ${upgrade_licensing_service}; then
+      title "Ugrading licensing service..."
+      local sub=$(kubectl get sub ibm-licensing-operator-app -n ${licensing_namespace} -o jsonpath='{.metadata.name}')
+      kubectl delete sub ${sub} -n ${licensing_namespace}
 
-    local csv=$(kubectl get csv -n ${licensing_namespace} | grep ibm-licensing-operator.${common_services_previous_version} | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${licensing_namespace}
+      local csv=$(kubectl get csv -n ${licensing_namespace} | grep ibm-licensing-operator | cut -d ' ' -f 1)
+      kubectl delete csv ${csv} -n ${licensing_namespace}
 
-    create_licensing_service_subscription ${licensing_namespace} ${olm_namespace} ${common_services_channel}
+      create_licensing_service_subscription ${licensing_namespace} ${olm_namespace} ${licensing_service_channel}
+    fi
 
-    if ${is_ibm_cert_manager}; then
-        local cert_manager_sub_namespace=$(kubectl get sub -A | grep ibm-cert-manager-operator | cut -d " " -f1)
+    if ${upgrade_cert_manager}; then
+        title "Ugrading certificate manager..."
+        local cert_manager_sub_namespace=$(kubectl get sub -A | grep ibm-cert-manager-operator | cut -d ' ' -f 1)
         sub=$(kubectl get sub ibm-cert-manager-operator -n ${cert_manager_sub_namespace} -o jsonpath='{.metadata.name}')
         kubectl delete sub ${sub} -n ${cert_manager_sub_namespace}
 
-        csv=$(kubectl get csv -n ${cert_manager_sub_namespace} | grep ibm-cert-manager-operator.${common_services_previous_version} | cut -d ' ' -f 1)
+        csv=$(kubectl get csv -n ${cert_manager_sub_namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f 1)
         kubectl delete csv ${csv} -n ${cert_manager_sub_namespace}
 
-        create_ibm_certificate_manager_subscription ${olm_namespace} ${common_services_channel} 
+        create_ibm_certificate_manager_subscription ${olm_namespace} ${cert_manager_channel} 
     fi
 }
 
 
 function upgrade {
     check_prereqs
-    check_subscription
-    upgrade_pre_req_catalog_sources
-    upgrade_subscription 
+    upgrade_prereqs_catalog_sources
+    upgrade_subscription_prereqs 
 }
 
 # --- Run ---
