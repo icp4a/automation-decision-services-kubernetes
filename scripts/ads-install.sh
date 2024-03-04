@@ -46,7 +46,7 @@ function create_cs_config_map() {
     ns=$(kubectl get ns ${ads_namespace} -o=jsonpath={.metadata.name} 2>/dev/null)
     if [[ -z ${ns} ]]; then
       info "Creating namespace ${ads_namespace}"
-      kubectl create namespace ${ads_namespace}
+      kubectl create namespace "${ads_namespace}"
     fi
 
     kubectl -n ${ads_namespace} delete cm ibm-cpp-config --ignore-not-found
@@ -57,7 +57,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ibm-cpp-config
-  namespace: ${ads_namespace}
+  namespace: "${ads_namespace}"
 data:
   commonwebui.standalone: "true"
 EOF
@@ -67,7 +67,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ibm-cpp-config
-  namespace: ${ads_namespace}
+  namespace: "${ads_namespace}"
 data:
   kubernetes_cluster_type: cncf
   commonwebui.standalone: "true"
@@ -79,17 +79,17 @@ EOF
   fi
 }
 
-function create_operator_group() {
+function create_ads_operator_group() {
     title "Creating operator group ..."
     kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
   name: ads
-  namespace: ${ads_namespace}
+  namespace: "${ads_namespace}"
 spec:
   targetNamespaces:
-  - ${ads_namespace}
+  - "${ads_namespace}"
 EOF
 
   if [[ $? -ne 0 ]]; then
@@ -135,12 +135,18 @@ function check_prereqs() {
     ## Check license service
     title "Checking if licensing service is installed in the cluster ..."
 
-    is_sub_exist "ibm-licensing-operator-app" # this will catch the packagenames of all ibm-licensing-operator-app
-    if [ $? -eq 0 ]; then
-        info "ok"
+    # Check if licensing service version is the one we target
+    local vls=$(get_licensing_service_version "")
+    if [[ "$vls" != "${licensing_service_target_version}" ]]; then
+        if [[ "$vls" == "unknown" ]]; then
+            error "Cannot find licensing version in your cluster. Please use ads-install-prereqs.sh script to install it."
+            exit 1
+        else
+            error "Detected licensing service version ${vls} which is not ${licensing_service_target_version}. Please upgrade pre-requisites with ads-upgrade-prereqs.sh script."
+            exit 1
+        fi
     else
-        error "No licensing service detected, use ads-install-prereqs.sh to install one."
-        exit 1
+      success "Licensing service v${vls} found."
     fi
 
     ## Check certificate manager
@@ -150,7 +156,18 @@ function check_prereqs() {
        error "No certificate manager detected, use ads-install-prereqs.sh to install one."
        exit 1
     else
-       info "ok"
+      local cert_manager_csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f1)
+      if [[ -z ${cert_manager_csv} ]]; then
+        info "Not using IBM cert manager."
+      else
+        vcm=${cert_manager_csv: -5}
+        if [[ "$vcm" == "${cert_manager_target_version}" ]]; then
+          success "IBM certificate manager v${cert_manager_target_version} found."
+        else
+          error "Detected IBM certificate manager version ${vcm} wich is not ${cert_manager_target_version}. Please upgrade pre-requisites with ads-upgrade-prereqs.sh script."
+          exit 1
+        fi
+      fi
     fi
 }
 
@@ -168,8 +185,8 @@ function install() {
     check_license
     check_prereqs
     create_cs_config_map
-    create_catalog_sources
-    create_operator_group
+    create_ads_catalog_sources
+    create_ads_operator_group
     create_ads_subscription ${ads_channel} ${ads_namespace}
 }
 

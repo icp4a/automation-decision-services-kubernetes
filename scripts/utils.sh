@@ -151,7 +151,7 @@ function create_catalog_source() {
   kind: CatalogSource
   metadata:
     name: ${name}
-    namespace: ${olm_namespace}
+    namespace: "${olm_namespace}"
     annotations:
       bedrock_catalogsource_priority: '1'
   spec:
@@ -171,7 +171,7 @@ EOF
   kind: CatalogSource
   metadata:
     name: ${name}
-    namespace: ${olm_namespace}
+    namespace: "${olm_namespace}"
     annotations:
       bedrock_catalogsource_priority: '1'
   spec:
@@ -190,7 +190,7 @@ EOF
     if [[ $? -ne 0 ]]; then
           error "Error creating catalog source ${name}."
     fi
-    wait_for_pod ${olm_namespace} "${name}"
+    wait_for_pod "${olm_namespace}" "${name}"
 }
 
 
@@ -225,13 +225,13 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: ibm-ads-${channel}
-  namespace: ${namespace}
+  namespace: "${namespace}"
 spec:
   channel: ${channel}
   installPlanApproval: Automatic
   name: ibm-ads-kn-operator
   source: ibm-ads-operator-catalog
-  sourceNamespace: ${namespace}
+  sourceNamespace: "${namespace}"
 EOF
     if [[ $? -ne 0 ]]; then
         error "ADS Operator subscription could not be created."
@@ -244,11 +244,11 @@ EOF
     wait_for_operator "${namespace}" "operand-deployment-lifecycle-manager"
 }
 
-function create_catalog_sources() {
+function create_ads_catalog_sources() {
   title "Creating catalog sources ..."
-  create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
-  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${ads_namespace} ${is_openshift}
-  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator-${ads_channel}" ${ads_catalog_image} ${ads_namespace} ${is_openshift}
+  create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} "${ads_namespace}" ${is_openshift}
+  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} "${ads_namespace}" ${is_openshift}
+  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator-${ads_channel}" ${ads_catalog_image} "${ads_namespace}" ${is_openshift}
 }
 
 function create_licensing_service_subscription() {
@@ -261,14 +261,13 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: ibm-licensing-operator-app
-  namespace: ${namespace}
+  namespace: "${namespace}"
 spec:
   channel: ${channel}
   installPlanApproval: Automatic
   name: ibm-licensing-operator-app
   source: ibm-licensing-catalog
-  sourceNamespace: ${olm_namespace}
-  startingCSV: ibm-licensing-operator.${channel}.0
+  sourceNamespace: "${olm_namespace}"
 EOF
 
   if [[ $? -ne 0 ]]; then
@@ -295,8 +294,7 @@ spec:
   installPlanApproval: Automatic
   name: ibm-cert-manager-operator
   source: ibm-cert-manager-catalog
-  sourceNamespace: ${olm_namespace}
-  startingCSV: ibm-cert-manager-operator.${channel}.0
+  sourceNamespace: "${olm_namespace}"
 EOF
   if [[ $? -ne 0 ]]; then
       error "Error creating ibm-cert-manager subscription."
@@ -306,3 +304,56 @@ EOF
   wait_for_operator ibm-cert-manager ibm-cert-manager-operator
 }
 
+function get_licensing_service_version() {
+  local namespace=$1
+  get_type_from_label "csv" "app.kubernetes.io/name=ibm-licensing" "{.items[0].spec.version}" "${namespace}"
+}
+
+function get_common_service_version() {
+  local namespace=$1
+  get_type_from_label "csv" "operators.coreos.com/ibm-common-service-operator.${namespace}" "{.items[0].spec.version}" "${namespace}"
+}
+
+function get_type_from_label() {
+  local type=$1
+  local label=$2
+  local path=$3
+  local namespace=$4
+  local namespace_opt="-A"
+
+  if [[ ! -z "$namespace" ]]; then
+    namespace_opt="-n ${namespace}"
+  fi
+
+  kubectl get "${type}" ${namespace_opt} -l "${label}" -o jsonpath="${path}" >/dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    echo $(kubectl get "${type}" ${namespace_opt} -l "${label}" -o jsonpath="${path}")
+  else
+    echo "unknown"
+  fi
+}
+
+function upgrade_ads_subscription() {
+    local old_channel=$1
+    local new_channel=$2
+    
+    local sub=$(kubectl get sub ibm-ads-${old_channel} -n "${ads_namespace}" -o jsonpath='{.metadata.name}')
+    kubectl delete sub ${sub} -n "${ads_namespace}"
+
+    sub=$(kubectl get sub -n "${ads_namespace}" | grep ibm-common-service-operator | cut -d ' ' -f 1)
+    kubectl delete sub ${sub} -n "${ads_namespace}"
+
+    sub=$(kubectl get sub -n "${ads_namespace}" | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
+    kubectl delete sub ${sub} -n "${ads_namespace}"
+    
+    local csv=$(kubectl get csv -n "${ads_namespace}" | grep ibm-ads-kn-operator.${old_channel} | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n "${ads_namespace}"
+
+    csv=$(kubectl get csv -n "${ads_namespace}" | grep ibm-common-service-operator | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n "${ads_namespace}"
+
+    csv=$(kubectl get csv -n "${ads_namespace}" | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n "${ads_namespace}"
+
+    create_ads_subscription ${new_channel} "${ads_namespace}"
+}

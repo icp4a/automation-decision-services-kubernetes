@@ -39,10 +39,10 @@ fi
 function create_pre_req_catalog_sources() {
   title "Creating pre-req catalog sources ..."
   if ! ${existing_cert_manager}; then
-    create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-${common_services_channel} ${cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
+    create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-${cert_manager_channel} ${cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
   fi
   if ! ${existing_licensing_service}; then
-    create_catalog_source ibm-licensing-catalog ibm-licensing-${common_services_channel} ${licensing_catalog_image} ${olm_namespace} ${is_openshift}
+    create_catalog_source ibm-licensing-catalog ibm-licensing-${licensing_service_channel} ${licensing_catalog_image} ${olm_namespace} ${is_openshift}
   fi
 }
 
@@ -89,13 +89,14 @@ EOF
 function create_subscriptions() {
     title "Creating subscription if needed ..."
 
-  if ! ${existing_cert_manager}; then
-    create_ibm_certificate_manager_subscription ${olm_namespace} ${common_services_channel} 
+  if ! ${existing_licensing_service}; then
+    create_licensing_service_subscription ${licensing_namespace} ${olm_namespace} ${licensing_service_channel}
   fi
 
-  if ! ${existing_licensing_service}; then
-    create_licensing_service_subscription ${licensing_namespace} ${olm_namespace} ${common_services_channel}
+  if ! ${existing_cert_manager}; then
+    create_ibm_certificate_manager_subscription ${olm_namespace} ${cert_manager_channel} 
   fi
+
 }
 
 function check_prereqs() {
