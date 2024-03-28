@@ -180,59 +180,6 @@ spec:
     # Label names and values must be strings, not prefixed with "kubernetes.io/" or "ads.ibm.com/"
     labels: {}
 
-    # Configure the 'front' service of Automation Decision Services
-    front:
-      # Number of replica for the service.  Default is one with the small deployment profile.
-      # This setting overrides the default value inherited from the deployment profile.
-      replica_count: 1
-
-      # This sample shows the default values for the small deployment profile.
-      # This setting overrides the default value inherited from the deployment profile.
-      resources:
-        requests:
-          cpu: '100m'
-          memory: '256Mi'
-          ephemeral_storage: '100Mi'
-        limits:
-          cpu: '300m'
-          memory: '256Mi'
-          ephemeral_storage: '500Mi'
-
-      # Configure liveness and readiness probes for the pods
-      liveness_probe:
-        timeout_seconds: 7
-      readiness_probe:
-        timeout_seconds: 7
-      startup_probe:
-        timeout_seconds: 7
-      
-      # Optional set of custom labels to set on pods of this service.
-      # Label names and values must be strings, not prefixed with "kubernetes.io/" or "ads.ibm.com/".
-      # This set augments the set of custom labels defined at the decision_designer level.
-      labels: {}
-
-    # Configure the download service of Automation Decision Services
-    # Refer to the comments on the 'front' section above for the parameters replica_count,
-    # resources, liveness_probe, readiness_probe, startup_probe and labels.
-    download_service:
-      replica_count: 1
-      resources:
-        requests:
-          cpu: '100m'
-          memory: '200Mi'
-          ephemeral_storage: '100Mi'
-        limits:
-          cpu: '300m'
-          memory: '200Mi'
-          ephemeral_storage: '500Mi'
-      liveness_probe:
-        timeout_seconds: 7
-      readiness_probe:
-        timeout_seconds: 7
-      startup_probe:
-        timeout_seconds: 7
-      labels: {}
-
     # Configure the 'rest api' service of Automation Decision Services
     # Refer to the comments on the 'front' section above for the parameters replica_count,
     # resources, liveness_probe, readiness_probe, startup_probe and labels.

@@ -3,8 +3,8 @@
 set -o nounset
 
 current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-source ${current_dir}/constants.sh
-source ${current_dir}/utils.sh
+source "${current_dir}/constants.sh"
+source "${current_dir}/utils.sh"
 
 function show_help() {
     echo "Usage: $0 [-h] -a [-n licensing-namespace]"
