@@ -3,8 +3,8 @@
 set -o nounset
 
 current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-source ${current_dir}/constants.sh
-source ${current_dir}/utils.sh
+source "${current_dir}/constants.sh"
+source "${current_dir}/utils.sh"
 
 function show_help() {
     echo "Usage: $0 [-h] [-a] -n <ads-namespace> [-d <domain-name>]"
@@ -174,7 +174,7 @@ function check_prereqs() {
 function check_license() {
   if ! ${accept_license}; then
     error "You have to accept the following license after reviewing it using the -a flag."
-    cat ${current_dir}/../License.txt
+    cat "${current_dir}/../License.txt"
     printf "\n"
     exit 1
   fi

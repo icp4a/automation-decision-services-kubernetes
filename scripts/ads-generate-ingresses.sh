@@ -4,10 +4,10 @@ set -o nounset
 
 
 current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-source ${current_dir}/utils.sh
+source "${current_dir}/utils.sh"
 
 function show_help() {
-    echo "Usage: $0 [-h] -n <namespace> -d <domain-name> [-o output-file]"
+    echo "Usage: $0 [-h] -n <namespace> [-o output-file]"
     echo "  -n <namespace>        Namespace where ADS is installed."
     echo "  -o output-file        File where the kubernetes manifests will be generated. Default is a temporary file."
 
@@ -73,7 +73,7 @@ function replace() {
 
   info "Writing kubernetes manifests to ${output_file}"
 
-  cp ${current_dir}/ingress_template_nginx.yaml ${output_file}
+  cp "${current_dir}/ingress_template_nginx.yaml" ${output_file}
   sed -i "s/NAMESPACE/${ads_namespace}/g" ${output_file}
   sed -i "s/HOST/${cp_console_hostname}/g" ${output_file}
   sed -i "s/DOMAIN/${domain_name}/g" ${output_file}
