@@ -85,12 +85,12 @@ function check_prereqs() {
     # Check Common services version
     local vcs=$(get_common_service_version ${ads_namespace})
     local truncated_vcs=${vcs:0:3}
-    if [[ "${truncated_vcs}" != "4.4" && "${truncated_vcs}" != "4.2"  ]]; then
+    if [[ "${truncated_vcs}" != "4.5" && "${truncated_vcs}" != "4.4" && "${truncated_vcs}" != "4.2"  ]]; then
         if [[ "$vcs" == "unknown" ]]; then
             error "Cannot find common services version in namespace ${ads_namespace}, is ADS installed in this namespace?"
             exit 1
         else
-            error "Detected common services version ${vcs} in namespace ${ads_namespace} which is neither 4.2 nor 4.4, are you upgrading from a 23.0.2 version?"
+            error "Detected common services version ${vcs} in namespace ${ads_namespace} which is neither 4.2 nor 4.4 nor 4.5, are you upgrading from a 23.0.2 version?"
             exit 1
         fi
     else
