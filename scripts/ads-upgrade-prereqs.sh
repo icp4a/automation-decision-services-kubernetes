@@ -52,38 +52,33 @@ function check_prereqs() {
 
     # Check if licensing service version is one we support to upgrade or if it is already the one we target.
     local vls=$(get_licensing_service_version ${licensing_namespace})
-    if [[ "$vls" == "${licensing_service_target_version}" ]]; then
-      success "Licensing service is already version ${licensing_service_target_version}, leave it untouched."
-      upgrade_licensing_service=false
+    if [[ "$vls" == "unknown" ]]; then
+      error "Cannot find licensing version in your cluster, is it installed?"
+      exit 1
+    elif [[ $(semver_compare ${vls} ${licensing_service_minimal_version_for_upgrade}) == "-1" ]]; then
+      error "Detected licensing service version ${vls} which is not greater or equals to version ${licensing_service_minimal_version_for_upgrade}. Cannot upgrade."
+      exit 1
+    elif [[ $(semver_compare ${vls} ${licensing_service_target_version}) == "-1" ]]; then
+      success "Licensing service v${vls} found. Will upgrade it."
+      upgrade_licensing_service=true
     else
-      if [[ "$vls" != "4.0.0" && "$vls" != "4.2.0" ]]; then
-          if [[ "$vls" == "unknown" ]]; then
-              error "Cannot find licensing version in your cluster, is it installed?"
-              exit 1
-          else
-              error "Detected licensing service version ${vls} which is neither 4.0.0 nor 4.2.0. Cannot upgrade."
-              exit 1
-          fi
-      else
-        success "Licensing service v${vls} found. Will upgrade it."
-        upgrade_licensing_service=true
-      fi
+      success "Licensing service is already version ${vls}, leave it untouched."
     fi
 
-    ## Check Certificate manager (no proper label to select so that we fall back to a grep)
-    local cert_manager_csv=$(kubectl get csv -n ${licensing_namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f1) # available in all namespaces, so also in ibm-licensing one.
-    if [[ -z ${cert_manager_csv} ]]; then
+    ## Check Certificate manager
+    local vcm=$(get_cert_manager_version ${licensing_namespace}) # available in all namespaces, so also in ibm-licensing one.
+    if [[ "$vcm" == "unknown" ]]; then
       upgrade_cert_manager=false
       info "IBM certificate manager is not used, it will not be upgraded."
+    elif [[ $(semver_compare ${vcm} ${cert_manager_minimal_version_for_upgrade}) == "-1" ]]; then
+      error "Detected IBM certificate manager version ${vls} which is not greater or equals to version ${cert_manager_minimal_version_for_upgrade}. Cannot upgrade."
+      exit 1
+    elif [[ $(semver_compare ${vcm} ${cert_manager_target_version}) == "-1" ]]; then
+      success "IBM certificate manager version v${vcm} found. Will upgrade it."
+      upgrade_cert_manager=true
     else
-      vcm=${cert_manager_csv: -5}
-      if [[ "$vcm" == "${cert_manager_target_version}" ]]; then
-        success "IBM Certificate manager is already version ${cert_manager_target_version}, leave it untouched."
-        upgrade_cert_manager=false
-      else
-        success "IBM certificate manager version v${vcm} found. Will upgrade it."
-        upgrade_cert_manager=true
-      fi
+      success "IBM Certificate manager is already version ${vcm}, leave it untouched."
+      upgrade_cert_manager=false
     fi
 }
 

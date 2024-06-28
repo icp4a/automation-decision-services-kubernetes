@@ -9,8 +9,7 @@ spec:
   version: "24.0.0"
 
   zen:
-    file_storage_classname: ocs-storagecluster-cephfs       # Has to be RWX
-    block_storage_classname: ocs-storagecluster-ceph-rbd
+    block_storage_classname: longhorn
 
   decision_designer:
     enabled: true
@@ -37,11 +36,13 @@ spec:
     # Uncomment to use another storage class then default one. RWX class is needed
     decision_runtime_service:
       persistence:
-        storage_class_name: ocs-storagecluster-cephfs
+        storage_class_name: longhorn
 
   mongo:
     use_embedded: true # Not for production use
+    run_as_user: 50001
+    fs_group: 50001
     persistence:
       # Uncomment to use another storage class then default one. RWO class is enough provided it is not bound to
       # a node. Use RWX storage class otherwise.
-      storage_class_name: ocs-storagecluster-ceph-rbd
+      storage_class_name: longhorn

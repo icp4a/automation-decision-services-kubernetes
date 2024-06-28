@@ -6,7 +6,7 @@ metadata:
 spec:
   license:
     accept: true
-  version: "23.0.2"
+  version: "24.0.0"
 
   zen:
     file_storage_classname: efs-sc # Has to be RWX

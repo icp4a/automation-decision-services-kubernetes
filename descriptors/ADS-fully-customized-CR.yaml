@@ -2,7 +2,7 @@
 ##
 ## Licensed Materials - Property of IBM
 ##
-## (C) Copyright IBM Corp. 2023. All Rights Reserved.
+## (C) Copyright IBM Corp. 2023, 2024. All Rights Reserved.
 ##
 ## US Government Users Restricted Rights - Use, duplication or
 ## disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
@@ -22,8 +22,8 @@ metadata:
   name: "sample"
 
 spec:
-  # Required: if this value is not "23.0.2" the operator ignores this resource.
-  version: "23.0.2"
+  # Required: if this value is not "24.0.0" the operator ignores this resource.
+  version: "24.0.0"
 
   license:
     # Required: used to accept license, the only valid value only is the boolean true.
@@ -310,30 +310,6 @@ spec:
         max_replicas: 2
         min_replicas: 5
         target_cpu_average_utilization: 160
-
-    embedded_build_service:
-      replica_count: 1
-
-       # Number of Jenkins executors, default 1. A good guess is cpu limit minus one.
-       # Too many executors can saturate the cpu and cause pod restarts.
-      executor_count: 1
-
-      resources:
-        requests:
-          cpu: '500m'
-          memory: '800Mi'
-          ephemeral_storage: '100Mi'
-        limits:
-          cpu: '2000m'
-          memory: '1.5Gi'
-          ephemeral_storage: '800Mi'
-      liveness_probe:
-        timeout_seconds: 7
-      readiness_probe:
-        timeout_seconds: 7
-      startup_probe:
-        timeout_seconds: 7
-      labels: {}
 
   decision_runtime:
     # Controls whether the Decision runtime is deployed or not.

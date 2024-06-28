@@ -151,7 +151,7 @@ function create_catalog_source() {
   kind: CatalogSource
   metadata:
     name: ${name}
-    namespace: "${olm_namespace}"
+    namespace: ${olm_namespace}
     annotations:
       bedrock_catalogsource_priority: '1'
   spec:
@@ -171,7 +171,7 @@ EOF
   kind: CatalogSource
   metadata:
     name: ${name}
-    namespace: "${olm_namespace}"
+    namespace: ${olm_namespace}
     annotations:
       bedrock_catalogsource_priority: '1'
   spec:
@@ -190,7 +190,7 @@ EOF
     if [[ $? -ne 0 ]]; then
           error "Error creating catalog source ${name}."
     fi
-    wait_for_pod "${olm_namespace}" "${name}"
+    wait_for_pod ${olm_namespace} "${name}"
 }
 
 
@@ -225,13 +225,13 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: ibm-ads-${channel}
-  namespace: "${namespace}"
+  namespace: ${namespace}
 spec:
   channel: ${channel}
   installPlanApproval: Automatic
   name: ibm-ads-kn-operator
   source: ibm-ads-operator-catalog
-  sourceNamespace: "${namespace}"
+  sourceNamespace: ${namespace}
 EOF
     if [[ $? -ne 0 ]]; then
         error "ADS Operator subscription could not be created."
@@ -246,9 +246,15 @@ EOF
 
 function create_ads_catalog_sources() {
   title "Creating catalog sources ..."
-  create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} "${ads_namespace}" ${is_openshift}
-  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} "${ads_namespace}" ${is_openshift}
-  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator-${ads_channel}" ${ads_catalog_image} "${ads_namespace}" ${is_openshift}
+
+  # Only create common services catalog if installed version is lower than the version in catalog referenced by cs_catalog_image variable
+  local vcs=$(get_common_service_version ${ads_namespace})
+  if [[ "$vcs" == "unknown" || $(semver_compare ${vcs} ${common_services_version}) == "-1" ]]; then
+      create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
+  fi
+  
+  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${ads_namespace} ${is_openshift}
+  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator-${ads_channel}" ${ads_catalog_image} ${ads_namespace} ${is_openshift}
 }
 
 function create_licensing_service_subscription() {
@@ -261,13 +267,13 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: ibm-licensing-operator-app
-  namespace: "${namespace}"
+  namespace: ${namespace}
 spec:
   channel: ${channel}
   installPlanApproval: Automatic
   name: ibm-licensing-operator-app
   source: ibm-licensing-catalog
-  sourceNamespace: "${olm_namespace}"
+  sourceNamespace: ${olm_namespace}
 EOF
 
   if [[ $? -ne 0 ]]; then
@@ -294,7 +300,7 @@ spec:
   installPlanApproval: Automatic
   name: ibm-cert-manager-operator
   source: ibm-cert-manager-catalog
-  sourceNamespace: "${olm_namespace}"
+  sourceNamespace: ${olm_namespace}
 EOF
   if [[ $? -ne 0 ]]; then
       error "Error creating ibm-cert-manager subscription."
@@ -307,6 +313,20 @@ EOF
 function get_licensing_service_version() {
   local namespace=$1
   get_type_from_label "csv" "app.kubernetes.io/name=ibm-licensing" "{.items[0].spec.version}" "${namespace}"
+}
+
+function get_cert_manager_version() {
+  local namespace=$1
+  local path="{.spec.version}"
+
+  local csv_name=$(kubectl get csv -n ${namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f1)
+  
+  kubectl get csv -n ${namespace} ${csv_name} -o jsonpath="${path}" >/dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    echo $(kubectl get csv -n ${namespace} ${csv_name} -o jsonpath="${path}")
+  else
+    echo "unknown"
+  fi
 }
 
 function get_common_service_version() {
@@ -336,24 +356,98 @@ function get_type_from_label() {
 function upgrade_ads_subscription() {
     local old_channel=$1
     local new_channel=$2
+
+    local sub=$(kubectl get sub ibm-ads-${old_channel} -n ${ads_namespace} -o jsonpath='{.metadata.name}')
+    kubectl delete sub ${sub} -n ${ads_namespace}
+
+    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
+    kubectl delete sub ${sub} -n ${ads_namespace}
+
+    sub=$(kubectl get sub -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
+    kubectl delete sub ${sub} -n ${ads_namespace}
     
-    local sub=$(kubectl get sub ibm-ads-${old_channel} -n "${ads_namespace}" -o jsonpath='{.metadata.name}')
-    kubectl delete sub ${sub} -n "${ads_namespace}"
+    local csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-ads-kn-operator.${old_channel} | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n ${ads_namespace}
 
-    sub=$(kubectl get sub -n "${ads_namespace}" | grep ibm-common-service-operator | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n "${ads_namespace}"
+    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n ${ads_namespace}
 
-    sub=$(kubectl get sub -n "${ads_namespace}" | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n "${ads_namespace}"
-    
-    local csv=$(kubectl get csv -n "${ads_namespace}" | grep ibm-ads-kn-operator.${old_channel} | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n "${ads_namespace}"
+    csv=$(kubectl get csv -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n ${ads_namespace}
 
-    csv=$(kubectl get csv -n "${ads_namespace}" | grep ibm-common-service-operator | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n "${ads_namespace}"
+    create_ads_subscription ${new_channel} ${ads_namespace}
+}
 
-    csv=$(kubectl get csv -n "${ads_namespace}" | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n "${ads_namespace}"
+function semver_compare() {
+    version1=$1
+    version2=$2
 
-    create_ads_subscription ${new_channel} "${ads_namespace}"
+    if [[ "${version1}" == "${version2}" ]]; then
+        echo "0"
+        return
+    fi
+
+    version1_major=$(printf %s "$version1" | cut -d'.' -f 1)
+    version1_minor=$(printf %s "$version1" | cut -d'.' -f 2)
+    version1_patch=$(printf %s "$version1" | cut -d'.' -f 3)
+
+    version2_major=$(printf %s "$version2" | cut -d'.' -f 1)
+    version2_minor=$(printf %s "$version2" | cut -d'.' -f 2)
+    version2_patch=$(printf %s "$version2" | cut -d'.' -f 3)
+
+    res=$(compare_number "$version1_major" "$version2_major")
+    if [[ "${res}" != "0" ]]; then
+        echo "${res}"
+        return
+    fi
+
+    res=$(compare_number "$version1_minor" "$version2_minor")
+    if [[ "${res}" != "0" ]]; then
+        echo "${res}"
+        return
+    fi
+
+    echo $(compare_number "$version1_patch" "$version2_patch")
+}
+
+function compare_number() {
+    number1=$1
+    number2=$2
+
+    if [[ "${number1}" -gt "${number2}" ]]; then
+        echo "1"
+        return
+    elif [[ "${number1}" -lt "${number2}" ]]; then
+        echo "-1"
+        return
+    fi
+    echo "0"
+}
+
+function add_target_namespace_to_operator_group() {
+    local namespace=$1
+    local operator_group_name=$2
+    local operator_group_namespace=$3
+
+    # extract target namespaces and convert the json array to a bash array
+    target_namespaces=($(echo $(kubectl get operatorgroup -n ${operator_group_namespace} ${operator_group_name} -o jsonpath='{.spec.targetNamespaces}') | tr -d '[]" ' | sed 's/,/ /g'))
+
+    # check if already contains the namespace
+    for i in "${target_namespaces[@]}"
+    do
+      if [[ $i == ${namespace} ]]; then
+        value_found=true
+        break
+      fi
+    done
+    if [[ -z ${value_found+x} ]]; then
+      title "Updating operator group ..."
+      kubectl patch operatorgroup -n ${operator_group_namespace} ${operator_group_name} -p "[{'op':'add','path':'/spec/targetNamespaces/-','value': ${namespace}}]" --type=json
+
+      if [[ $? -ne 0 ]]; then
+        error "Error updating operator group."
+      fi
+    else
+      info "target namespaces of the operator group already contain the namespace ${namespace}"
+    fi
 }

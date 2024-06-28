@@ -79,6 +79,16 @@ function replace() {
   sed -i "s/DOMAIN/${domain_name}/g" ${output_file}
   sed -i "s/CLIENT_ID/${client_id}/g" ${output_file}
   sed -i "s/LICENSING_NS/${licensing_namespace}/g" ${output_file}
+
+  # add nginx.ingress.kubernetes.io/proxy-buffer-size annotations to zen ingress
+  echo "" >> ${output_file}
+  echo "---" >> ${output_file}
+  kubectl get ingress zen-ingress -n ${ads_namespace} -o yaml | \
+    # remove system properties
+    kubectl patch -f - -p '{"metadata":{"creationTimestamp": null, "generation": null, "ownerReferences": null, "resourceVersion": null, "uid": null}, "status":null}' --type=merge --dry-run='client' -o yaml | \
+    # add annotation
+    kubectl patch -f - -p '{"metadata":{"annotations":{"nginx.ingress.kubernetes.io/proxy-buffer-size":"8k"}}}' --type=merge --dry-run='client' -o yaml \
+      >> ${output_file}
 }
 
 function generate() {

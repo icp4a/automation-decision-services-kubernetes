@@ -54,45 +54,40 @@ function check_prereqs() {
       success "OLM available under namespace ${olm_namespace}."
     fi
 
-   # Check licensing service version
+    # Check licensing service version
     local vls=$(get_licensing_service_version "")
-    if [[ "$vls" != "${licensing_service_target_version}" ]]; then
-        if [[ "$vls" == "unknown" ]]; then
-            error "Cannot find licensing version in your cluster, is it installed?"
-            exit 1
-        else
-            error "Detected licensing service version ${vls} which is not ${licensing_service_target_version}, please upgrade first pre-requisites with ads-upgrade-prereqs.sh script."
-            exit 1
-        fi
+    if [[ "$vls" == "unknown" ]]; then
+        error "Cannot find licensing version in your cluster. Please use ads-install-prereqs.sh script to install it."
+        exit 1
+    elif [[ $(semver_compare ${vls} ${licensing_service_target_version}) == "-1" ]]; then
+        error "Detected licensing service version ${vls} which is not ${licensing_service_target_version}. Please upgrade pre-requisites with ads-upgrade-prereqs.sh script."
+        exit 1
     else
-        success "Detected licensing service version ${vls}."
+       success "Licensing service v${vls} found."
     fi
 
     ## Check certificate manager
-    local cert_manager_csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f1)
-    if [[ -z ${cert_manager_csv} ]]; then
+    local vcm=$(get_cert_manager_version ${ads_namespace})
+    if [[ "$vcm" == "unknown" ]]; then
         info "Not using IBM cert manager."
+    elif [[ $(semver_compare ${vcm} ${cert_manager_target_version}) == "-1" ]]; then
+        error "Detected IBM certificate manager version ${vcm} which is not greater or equals to version ${cert_manager_target_version}. Please upgrade pre-requisites with ads-upgrade-prereqs.sh script."
+        exit 1
     else
-        vcm=${cert_manager_csv: -5}
-        if [[ "$vcm" == "${cert_manager_target_version}" ]]; then
-            success "Detected IBM certificate manager v${cert_manager_target_version}."
-        else
-            error "Detected IBM certificate manager version ${vcm} wich is not ${cert_manager_target_version}. Please upgrade first pre-requisites with ads-upgrade-prereqs.sh script."
-            exit 1
-        fi
+        success "IBM certificate manager ${vcm} found."
     fi
 
     # Check Common services version
     local vcs=$(get_common_service_version ${ads_namespace})
-    local truncated_vcs=${vcs:0:3}
-    if [[ "${truncated_vcs}" != "4.0" ]]; then
-        if [[ "$vcs" == "unknown" ]]; then
-            error "Cannot find common services version in namespace ${ads_namespace}, is ADS installed in this namespace?"
-            exit 1
-        else
-            error "Detected common services version ${vcs} in namespace ${ads_namespace} which is not 4.0, are you upgrading from a ${ads_channel_previous_version} version?"
-            exit 1
-        fi
+    if [[ "$vcs" == "unknown" ]]; then
+        error "Cannot find common services version in namespace ${ads_namespace}, is ADS installed in this namespace?"
+        exit 1
+    elif [[ $(semver_compare ${vcs} ${cs_minimal_version_for_upgrade}) == "-1" ]]; then
+        error "Detected common services version ${vcs} in namespace ${ads_namespace} which is not greater or equals to version ${cs_minimal_version_for_upgrade}, are you upgrading from a ${ads_channel_previous_version} version?"
+        exit 1
+    elif [[ $(semver_compare ${vcs} ${cs_maximal_version_for_upgrade}) != "-1" ]]; then
+        error "Detected common services version ${vcs} in namespace ${ads_namespace} which is not lower to version ${cs_maximal_version_for_upgrade}, are you upgrading from a ${ads_channel_previous_version} version?"
+        exit 1
     else
         success "Detected common services version ${vcs}."
     fi

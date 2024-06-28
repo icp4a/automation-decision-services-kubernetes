@@ -46,7 +46,7 @@ function create_cs_config_map() {
     ns=$(kubectl get ns ${ads_namespace} -o=jsonpath={.metadata.name} 2>/dev/null)
     if [[ -z ${ns} ]]; then
       info "Creating namespace ${ads_namespace}"
-      kubectl create namespace "${ads_namespace}"
+      kubectl create namespace ${ads_namespace}
     fi
 
     kubectl -n ${ads_namespace} delete cm ibm-cpp-config --ignore-not-found
@@ -57,7 +57,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ibm-cpp-config
-  namespace: "${ads_namespace}"
+  namespace: ${ads_namespace}
 data:
   commonwebui.standalone: "true"
 EOF
@@ -67,7 +67,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ibm-cpp-config
-  namespace: "${ads_namespace}"
+  namespace: ${ads_namespace}
 data:
   kubernetes_cluster_type: cncf
   commonwebui.standalone: "true"
@@ -80,20 +80,29 @@ EOF
 }
 
 function create_ads_operator_group() {
-    title "Creating operator group ..."
-    kubectl apply -f - <<EOF
+    existing_og_name=$(kubectl get operatorgroup -n ${ads_namespace} -o name | awk -F "/" '{print $NF}')
+    if [[ ! -z ${existing_og_name} ]]; then
+      info "operatorgroup '${existing_og_name}' detected in namespace '${ads_namespace}'."
+      
+      add_target_namespace_to_operator_group ${ads_namespace} ${existing_og_name} ${ads_namespace}
+
+    else
+      title "Creating operator group ..."
+      # use namespace name as operatorgroup name
+      kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: ads
-  namespace: "${ads_namespace}"
+  name: ${ads_namespace}
+  namespace: ${ads_namespace}
 spec:
   targetNamespaces:
-  - "${ads_namespace}"
+  - ${ads_namespace}
 EOF
 
-  if [[ $? -ne 0 ]]; then
-        error "Error creating operator group."
+      if [[ $? -ne 0 ]]; then
+          error "Error creating operator group."
+      fi
     fi
 }
 
@@ -137,16 +146,14 @@ function check_prereqs() {
 
     # Check if licensing service version is the one we target
     local vls=$(get_licensing_service_version "")
-    if [[ "$vls" != "${licensing_service_target_version}" ]]; then
-        if [[ "$vls" == "unknown" ]]; then
-            error "Cannot find licensing version in your cluster. Please use ads-install-prereqs.sh script to install it."
-            exit 1
-        else
-            error "Detected licensing service version ${vls} which is not ${licensing_service_target_version}. Please upgrade pre-requisites with ads-upgrade-prereqs.sh script."
-            exit 1
-        fi
+    if [[ "$vls" == "unknown" ]]; then
+        error "Cannot find licensing version in your cluster. Please use ads-install-prereqs.sh script to install it."
+        exit 1
+    elif [[ $(semver_compare ${vls} ${licensing_service_target_version}) == "-1" ]]; then
+        error "Detected licensing service version ${vls} which is not ${licensing_service_target_version}. Please upgrade pre-requisites with ads-upgrade-prereqs.sh script."
+        exit 1
     else
-      success "Licensing service v${vls} found."
+       success "Licensing service v${vls} found."
     fi
 
     ## Check certificate manager
@@ -156,17 +163,15 @@ function check_prereqs() {
        error "No certificate manager detected, use ads-install-prereqs.sh to install one."
        exit 1
     else
-      local cert_manager_csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f1)
-      if [[ -z ${cert_manager_csv} ]]; then
-        info "Not using IBM cert manager."
-      else
-        vcm=${cert_manager_csv: -5}
-        if [[ "$vcm" == "${cert_manager_target_version}" ]]; then
-          success "IBM certificate manager v${cert_manager_target_version} found."
-        else
-          error "Detected IBM certificate manager version ${vcm} wich is not ${cert_manager_target_version}. Please upgrade pre-requisites with ads-upgrade-prereqs.sh script."
+
+      local vcm=$(get_cert_manager_version ${ads_namespace})
+      if [[ "$vcm" == "unknown" ]]; then
+          info "Not using IBM cert manager."
+      elif [[ $(semver_compare ${vcm} ${cert_manager_target_version}) == "-1" ]]; then
+          error "Detected IBM certificate manager version ${vcm} which is not greater or equals to version ${cert_manager_target_version}. Please upgrade pre-requisites with ads-upgrade-prereqs.sh script."
           exit 1
-        fi
+      else
+        success "IBM certificate manager ${vcm} found."
       fi
     fi
 }

@@ -68,10 +68,10 @@ if [[ ! -z ${since} ]]; then
 fi
 
 if [[ -z ${gather_dir} ]] ; then
-  designer_pods=( $(kubectl -n "$ads_namespace" get pod -o name | grep 'rest-api\|embedded-build-service\|parsing-service\|run-service\|credentials-service\|git-service') )
+  designer_pods=( $(kubectl -n "$ads_namespace" get pod -o name | grep 'rest-api\|parsing-service\|run-service\|credentials-service\|git-service') )
 else
   shopt -s nullglob
-  designer_pods=( "$gather_dir/namespaces/$ads_namespace/"@(*rest-api*|*embedded-build-service*|*parsing-service*|*run-service*|*credentials-service*|*git-service*) )
+  designer_pods=( "$gather_dir/namespaces/$ads_namespace/"@(*rest-api*|*parsing-service*|*run-service*|*credentials-service*|*git-service*) )
   shopt -u nullglob
 fi
 if [[ ${#designer_pods[@]} == 0 ]]; then

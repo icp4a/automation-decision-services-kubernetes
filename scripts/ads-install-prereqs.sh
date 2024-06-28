@@ -67,11 +67,20 @@ EOF
 
   if ! ${existing_licensing_service}; then
     create_namespace ${licensing_namespace}
-    kubectl apply -f - <<EOF
+
+    existing_og_name=$(kubectl get operatorgroup -n ${licensing_namespace} -o name | awk -F "/" '{print $NF}')
+    if [[ ! -z ${existing_og_name} ]]; then
+      info "operatorgroup '${existing_og_name}' detected in namespace '${licensing_namespace}'."
+      
+      add_target_namespace_to_operator_group ${licensing_namespace} ${existing_og_name} ${licensing_namespace}
+
+    else
+      # use namespace name as operatorgroup name
+      kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: ibm-licensing
+  name: ${licensing_namespace}
   namespace: ${licensing_namespace}
 spec:
   targetNamespaces:
@@ -79,8 +88,9 @@ spec:
   upgradeStrategy: Default
 EOF
 
-    if [[ $? -ne 0 ]]; then
-      error "Error creating ibm-licensing operator group."
+      if [[ $? -ne 0 ]]; then
+        error "Error creating ibm-licensing operator group."
+      fi
     fi
   fi
 
