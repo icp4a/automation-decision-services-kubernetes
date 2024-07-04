@@ -71,7 +71,7 @@ function check_prereqs() {
       upgrade_cert_manager=false
       info "IBM certificate manager is not used, it will not be upgraded."
     elif [[ $(semver_compare ${vcm} ${cert_manager_minimal_version_for_upgrade}) == "-1" ]]; then
-      error "Detected IBM certificate manager version ${vls} which is not greater or equals to version ${cert_manager_minimal_version_for_upgrade}. Cannot upgrade."
+      error "Detected IBM certificate manager version ${vcm} which is not greater or equals to version ${cert_manager_minimal_version_for_upgrade}. Cannot upgrade."
       exit 1
     elif [[ $(semver_compare ${vcm} ${cert_manager_target_version}) == "-1" ]]; then
       success "IBM certificate manager version v${vcm} found. Will upgrade it."

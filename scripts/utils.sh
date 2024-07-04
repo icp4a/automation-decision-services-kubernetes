@@ -321,11 +321,15 @@ function get_cert_manager_version() {
 
   local csv_name=$(kubectl get csv -n ${namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f1)
   
-  kubectl get csv -n ${namespace} ${csv_name} -o jsonpath="${path}" >/dev/null 2>&1
-  if [ $? -eq 0 ]; then
-    echo $(kubectl get csv -n ${namespace} ${csv_name} -o jsonpath="${path}")
+  if [[ -z ${csv_name} ]]; then
+      echo "unknown"
   else
-    echo "unknown"
+    kubectl get csv -n ${namespace} ${csv_name} -o jsonpath="${path}" >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+      echo $(kubectl get csv -n ${namespace} ${csv_name} -o jsonpath="${path}")
+    else
+      echo "unknown"
+    fi
   fi
 }
 
