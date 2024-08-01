@@ -25,6 +25,6 @@ licensing_catalog_image="icr.io/cpopen/ibm-licensing-catalog@sha256:dfdd38cac150
 cert_manager_catalog_image="icr.io/cpopen/ibm-cert-manager-operator-catalog@sha256:955732299dd174524612ec8e8076237a491cedee1264e4e4be39c2a92f48bc39" # IBM Certificate Manager 4.2.2 from https://github.com/IBM/cloud-pak/tree/master/repo/case/ibm-cert-manager/4.2.2
 
 cs_catalog_image="icr.io/cpopen/ibm-common-service-catalog@sha256:601e84bf15e92a98e2b9a6e64320a2cd4f4912533bf49407eed4aeacca8d0c00" # IBM Cloud Foundational Services 4.6.2 from https://github.com/IBM/cloud-pak/tree/master/repo/case/ibm-cp-common-services/4.6.2
-ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:20562f48373e571bd842e19dada63322e18356720cb14cce6849cf58fdc3af7e" # 24.0.0
+ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:649f37c72ef3721e08a50d76029a703b6fd8c25ffc92fde6b2441c623b09d34e" # 24.0.0-IF001
 edb_catalog_image="icr.io/cpopen/ibm-cpd-cloud-native-postgresql-operator-catalog@sha256:c96aa2e6bce92f2e5e4874116cf1cc1cdd60676499cd04ab1631462b8b883357" # Cloud Native PostgresSQL 4.18.0 from https://github.com/IBM/cloud-pak/tree/master/repo/case/ibm-cloud-native-postgresql/4.18.0
 
