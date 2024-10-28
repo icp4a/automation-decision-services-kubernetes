@@ -84,3 +84,9 @@ controller:
 
 Then you'll use [ads-generate-ingresses.sh](../scripts/ads-generate-ingresses.sh) script to obtain the ingresses definition you'll have to apply to your cluster.
 
+## Special network configuration
+Depending on how the network was configured, the communication between the kube-api server and worker nodes can be restricted, causing errors during webhook invocations as shown in the following example:
+```
+I0624 14:19:58.368935       1 waitToCreateCsCR.go:36] Webhook Server not ready, waiting for it to be ready : could not Create resource: Internal error occurred: failed calling webhook \"vcommonservice.kb.io\": failed to call webhook: Post \"https://ibm-common-service-operator-service.ads.svc:443/validate-operator-ibm-com-v3-commonservice?timeout=10s\": context deadline exceeded
+```
+To explicitly allow communications, customize and apply additional custom network [policies](./extended-netpols.yaml) into your cluster to unblock.

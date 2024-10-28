@@ -1,0 +1,72 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: access-to-ibm-common-service-operator
+  namespace: "<ads-namespace>"
+spec:
+  podSelector:
+    matchLabels:
+      name: ibm-common-service-operator
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 9443
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: access-to-postgresql-operator
+  namespace: "<ads-namespace>"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name : cloud-native-postgresql       
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 9443
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: access-to-kubernetes
+  namespace: "<ads-namespace>"
+spec:
+  egress:
+  - ports:
+    - port: 443
+      protocol: TCP
+    to:
+    - namespaceSelector:
+        matchExpressions:
+          - key: kubernetes.io/metadata.name
+            operator: In
+            values:
+            - default
+  podSelector: {}
+  policyTypes:
+  - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-from-olm
+  namespace: "<ads-namespace>"
+spec:
+  podSelector:
+    matchLabels:
+      olm.managed: "true"
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            - olm
+  policyTypes:
+    - Ingress
