@@ -250,7 +250,10 @@ function create_ads_catalog_sources() {
   # Only create common services catalog if installed version is lower than the version in catalog referenced by cs_catalog_image variable
   local vcs=$(get_common_service_version ${ads_namespace})
   if [[ "$vcs" == "unknown" || $(semver_compare ${vcs} ${common_services_version}) == "-1" ]]; then
-      create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
+      create_catalog_source opencloud-operators "IBM CS Install Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
+      create_catalog_source ibm-cs-im-operators "IBM IAM Operator Catalog" ${cs_im_catalog_image} ${ads_namespace} ${is_openshift}
+      create_catalog_source ibm-zen-operators "IBM Zen Operator Catalog" ${zen_catalog_image} ${ads_namespace} ${is_openshift}
+
   fi
   
   create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${ads_namespace} ${is_openshift}
@@ -367,6 +370,15 @@ function upgrade_ads_subscription() {
     sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
     kubectl delete sub ${sub} -n ${ads_namespace}
 
+    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-im-operator | cut -d ' ' -f 1)
+    kubectl delete sub ${sub} -n ${ads_namespace}
+
+    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-idp-config-ui-operator | cut -d ' ' -f 1)
+    kubectl delete sub ${sub} -n ${ads_namespace}
+
+    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-platformui-operator | cut -d ' ' -f 1)
+    kubectl delete sub ${sub} -n ${ads_namespace}
+
     sub=$(kubectl get sub -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
     kubectl delete sub ${sub} -n ${ads_namespace}
     
@@ -374,6 +386,15 @@ function upgrade_ads_subscription() {
     kubectl delete csv ${csv} -n ${ads_namespace}
 
     csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n ${ads_namespace}
+
+    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-commonui-operator | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n ${ads_namespace}
+
+    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-iam-operator | cut -d ' ' -f 1)
+    kubectl delete csv ${csv} -n ${ads_namespace}
+
+    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-zen-operator | cut -d ' ' -f 1)
     kubectl delete csv ${csv} -n ${ads_namespace}
 
     csv=$(kubectl get csv -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
