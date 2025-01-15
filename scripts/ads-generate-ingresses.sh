@@ -7,9 +7,10 @@ current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "${current_dir}/utils.sh"
 
 function show_help() {
-    echo "Usage: $0 [-h] -n <namespace> [-o output-file]"
+    echo "Usage: $0 [-h] [-t] -n <namespace> [-o output-file]"
     echo "  -n <namespace>        Namespace where ADS is installed."
     echo "  -o output-file        File where the kubernetes manifests will be generated. Default is a temporary file."
+    echo "  -t                    Configure ingresses to perform tls termination with certificates into ads-ingress-tls-secret secret."
 
 }
 
@@ -18,7 +19,9 @@ client_id=""
 output_file=""
 cp_console_hostname=""
 domain_name=""
-while getopts "h?n:o:" opt; do
+template_file="ingress_template_nginx.yaml"
+tls_termination=false
+while getopts "h?n:o:t?" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -28,6 +31,8 @@ while getopts "h?n:o:" opt; do
         ;;
     o)  output_file=$OPTARG
         ;;
+    t)  tls_termination=true
+        ;;
     esac
 done
 
@@ -35,6 +40,10 @@ if [[ -z ${ads_namespace} ]]; then
     error "ADS namespace is mandatory."
     show_help
     exit 1
+fi
+
+if [[ "${tls_termination}" = true ]]; then
+  template_file="ingress_template_nginx_tls_termination.yaml"
 fi
 
 function check_prereqs() {
@@ -73,7 +82,7 @@ function replace() {
 
   info "Writing kubernetes manifests to ${output_file}"
 
-  cp "${current_dir}/ingress_template_nginx.yaml" ${output_file}
+  cp "${current_dir}/${template_file}" ${output_file}
   sed -i "s/NAMESPACE/${ads_namespace}/g" ${output_file}
   sed -i "s/HOST/${cp_console_hostname}/g" ${output_file}
   sed -i "s/DOMAIN/${domain_name}/g" ${output_file}
@@ -83,12 +92,30 @@ function replace() {
   # add nginx.ingress.kubernetes.io/proxy-buffer-size annotations to zen ingress
   echo "" >> ${output_file}
   echo "---" >> ${output_file}
+
+  tmp_zen_ingress=$(mktemp)
+
   kubectl get ingress zen-ingress -n ${ads_namespace} -o yaml | \
     # remove system properties
     kubectl patch -f - -p '{"metadata":{"creationTimestamp": null, "generation": null, "ownerReferences": null, "resourceVersion": null, "uid": null}, "status":null}' --type=merge --dry-run='client' -o yaml | \
     # add annotation
     kubectl patch -f - -p '{"metadata":{"annotations":{"nginx.ingress.kubernetes.io/proxy-buffer-size":"8k"}}}' --type=merge --dry-run='client' -o yaml \
-      >> ${output_file}
+      > ${tmp_zen_ingress}
+
+    if [[ "${tls_termination}" = true ]]; then
+      tmp_zen_ingress_work=$(mktemp)
+      # add tls section
+      # kubectl patch -f ${tmp_zen_ingress} -p='[{"op": "add", "path": "/spec", "value": {"tls": { "hosts": ["CPD_HOST"], "secretName": "cpd-ingress-tls-secret" }}}]' --type=json --dry-run='client' -o yaml | \
+      kubectl patch -f ${tmp_zen_ingress} -p '{"spec": {"tls": [{"hosts": ["CPD_HOST"], "secretName": "cpd-ingress-tls-secret" }]}}' --type=merge --dry-run='client' -o yaml | \
+      # add annotation
+      kubectl patch -f - -p '{"metadata":{"annotations":{"cert-manager.io/issuer":"zen-tls-issuer"}}}' --type=merge --dry-run='client' -o yaml  \
+        > ${tmp_zen_ingress_work}
+      cat ${tmp_zen_ingress_work} > ${tmp_zen_ingress} && rm ${tmp_zen_ingress_work}
+      sed -i "s/CPD_HOST/ads-cpd.${domain_name}/g" ${tmp_zen_ingress}
+    fi
+
+    cat ${tmp_zen_ingress} >> ${output_file}
+    rm ${tmp_zen_ingress}
 }
 
 function generate() {

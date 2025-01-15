@@ -1,0 +1,48 @@
+apiVersion: ads.ibm.com/v1
+kind: AutomationDecisionService
+metadata:
+  name: ads
+  namespace: ads
+spec:
+  license:
+    accept: true
+  version: "24.0.1"
+
+  zen:
+    block_storage_classname: managed-csi
+
+  decision_designer:
+    enabled: true
+
+  decision_runtime:
+    enabled: true
+
+    # Uncomment section to use s3 as storage type
+    # archive_storage_type: "s3"      # Optional, only used if archive_storage_type is "s3"
+    # s3:
+    # Following parameters must be set if archive_storage_type is "s3"
+    # bucket_name: "ads-dev-eks-runtime"
+    # region: "eu-west-3"
+    # storage_region: "eu-west-3"
+    # server_url: "https://s3.eu-west-3.amazonaws.com"
+    # secret_name: s3-secret
+    # deployment_space_deletion_delay: 0
+    # Optional
+    # connection_timeout: 60000 # default value 0 meaning infinite
+    # request_timeout: 60000     # default value 0 meaning infinite
+
+    # OR
+    #
+    # Uncomment to use another storage class then default one. RWX class is needed
+    decision_runtime_service:
+      persistence:
+        storage_class_name: afs-for-ads
+
+
+  mongo:
+    use_embedded: true # Not for production use
+    run_as_user: 50001
+    persistence:
+      # Uncomment to use another storage class then default one. RWO class is enough provided it is not bound to
+      # a node. Use RWX storage class otherwise.
+      storage_class_name: afs-for-ads
