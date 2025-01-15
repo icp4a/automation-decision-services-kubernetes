@@ -1,0 +1,294 @@
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /ibm/api/social-login$2
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    cert-manager.io/issuer: "zen-tls-issuer"
+  name: cncf-social-login-callback
+  namespace: NAMESPACE
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: HOST
+      http:
+        paths:
+          - path: /ibm/api/social-login(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: platform-auth-service
+                port:
+                  number: 9443
+  tls:
+  - hosts:
+    - HOST
+    secretName: cp-console-ingress-tls-secret
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /ibm/saml20/defaultSP/acs$2
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: cncf-saml-ui-callback
+  namespace: NAMESPACE
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: HOST
+      http:
+        paths:
+          - path: /ibm/saml20/defaultSP/acs(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: platform-auth-service
+                port:
+                  number: 9443
+  tls:
+  - hosts:
+    - HOST
+    secretName: cp-console-ingress-tls-secret
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-name: wantaffinity
+  name: cncf-platform-oidc
+  namespace: NAMESPACE
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: HOST
+      http:
+        paths:
+          - path: /oidc
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: platform-auth-service
+                port:
+                  number: 9443
+  tls:
+  - hosts:
+    - HOST
+    secretName: cp-console-ingress-tls-secret
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: "/v1/auth/authorize?client_id=CLIENT_ID&redirect_uri=https://HOST/auth/liberty/callback&response_type=code&scope=openid+email+profile&orig=/login$2"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: cncf-platform-login
+  namespace: NAMESPACE
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: HOST
+      http:
+        paths:
+          - path: /login(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: platform-identity-provider
+                port:
+                  number: 4300
+  tls:
+  - hosts:
+    - HOST
+    secretName: cp-console-ingress-tls-secret
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: cncf-platform-id-provider
+  namespace: NAMESPACE
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: HOST
+      http:
+        paths:
+          - path: /idprovider/(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: platform-identity-provider
+                port:
+                  number: 4300
+  tls:
+  - hosts:
+    - HOST
+    secretName: cp-console-ingress-tls-secret
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: cncf-platform-id-auth
+  namespace: NAMESPACE
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: HOST
+      http:
+        paths:
+          - path: /idauth(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: platform-auth-service
+                port:
+                  number: 9443
+  tls:
+  - hosts:
+    - HOST
+    secretName: cp-console-ingress-tls-secret
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /v1/auth/$1
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: cncf-platform-auth
+  namespace: NAMESPACE
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: HOST
+      http:
+        paths:
+          - path: /v1/auth/(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: platform-identity-provider
+                port:
+                  number: 4300
+  tls:
+  - hosts:
+    - HOST
+    secretName: cp-console-ingress-tls-secret
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: cncf-id-mgmt
+  namespace: NAMESPACE
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: HOST
+      http:
+        paths:
+          - path: /idmgmt/(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: platform-identity-management
+                port:
+                  number: 4500
+  tls:
+  - hosts:
+    - HOST
+    secretName: cp-console-ingress-tls-secret
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-name: wantaffinity
+  name: cncf-common-web-ui
+  namespace: NAMESPACE
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: HOST
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: common-web-ui
+                port:
+                  number: 3000
+  tls:
+  - hosts:
+    - HOST
+    secretName: cp-console-ingress-tls-secret
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cncf-ibm-licensing-service-instance
+  namespace: LICENSING_NS
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: licensing.DOMAIN
+      http:
+        paths:
+          - backend:
+              service:
+                name: ibm-licensing-service-instance
+                port:
+                  number: 8080
+            path: /
+            pathType: ImplementationSpecific
+  tls:
+  - hosts:
+    - HOST
+    secretName: cp-console-ingress-tls-secret
