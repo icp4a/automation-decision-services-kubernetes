@@ -9,7 +9,6 @@ spec:
   version: "24.0.0"
 
   zen:
-    file_storage_classname: ocs-storagecluster-cephfs       # Has to be RWX
     block_storage_classname: ocs-storagecluster-ceph-rbd
 
   decision_designer:

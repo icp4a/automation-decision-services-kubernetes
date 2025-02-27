@@ -9,7 +9,6 @@ spec:
   version: "24.0.0"
 
   zen:
-    file_storage_classname: efs-sc # Has to be RWX
     block_storage_classname: gp2
 
   decision_designer:
