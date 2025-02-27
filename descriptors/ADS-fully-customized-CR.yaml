@@ -72,11 +72,6 @@ spec:
 
   # These parameters configure the installation of the Zen instance that is triggered by this ADS instance.
   zen:
-    # Set the storage class for file-based persistent volume needed by Zen.
-    # By default, use the value from spec.storage_classname, but either one or the other must be set to a non null value.
-    # Modifying this parameter after the initial installation has not effect.
-    #file_storage_classname: ""
-
     # Set the storage class for persistent volumes backed by a block device as needed by Zen.
     # By default, use the spec.zen.file_storage_classname or spec.storage_classname value, but either
     # one or the other must be set to a non null value.
