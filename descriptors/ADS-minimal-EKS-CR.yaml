@@ -6,7 +6,7 @@ metadata:
 spec:
   license:
     accept: true
-  version: "24.0.0"
+  version: "24.0.1"
 
   zen:
     block_storage_classname: gp2
