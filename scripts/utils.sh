@@ -303,7 +303,7 @@ function update_zen_csv() {
     zen_operator_name=$(kubectl get -n ${namespace} pod -l app.kubernetes.io/name=ibm-zen-operator -o jsonpath='{.items[0].metadata.name}')
     kubectl exec -n ${namespace} -it ${zen_operator_name} -c ibm-zen-operator -- cat ${zen_operator_ingress_template_filepath} | \
       # patch command used to format original template
-      kubectl patch -f - -p '{}' --type=merge --dry-run='client' -o yaml \
+      kubectl patch -n ${namespace} -f - -p '{}' --type=merge --dry-run='client' -o yaml \
         > ${tmp_original_zen_ingress_template_filepath}
   else
     info "Recreating ConfigMap ${zen_ingress_template_fixed_cm} containing fixed zen ingress template"
