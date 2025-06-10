@@ -242,6 +242,107 @@ EOF
     wait_for_operator "${namespace}" "ibm-ads-kn-operator"
     wait_for_operator "${namespace}" "ibm-common-service-operator"
     wait_for_operator "${namespace}" "operand-deployment-lifecycle-manager"
+
+    if ! ${is_openshift}; then
+        # Workaround for bug in zen ingress generation by zen operator on CNCF platform
+        # https://github.ibm.com/IBMPrivateCloud/roadmap/issues/66569
+        fix_zen_operator ${ads_namespace}
+    fi
+}
+
+zen_ingress_template_fixed_cm="zen-ingress-nginx-template-fixed"
+
+function fix_zen_operator() {
+  local namespace=$1
+
+  kubectl apply -f - <<EOF
+apiVersion: operator.ibm.com/v1alpha1
+kind: OperandRequest
+metadata:
+  name: ads-operand-request
+  namespace: ${namespace}
+spec:
+  requests:
+  - operands:
+    - name: ibm-platformui-operator
+    registry: common-service
+    registryNamespace: ${namespace}
+EOF
+
+  if [[ $? -ne 0 ]]; then
+    error "Error creating ads-operand-request operandrequest."
+  fi
+
+  info "Waiting for ibm-zen-operator subscription to become active."
+  wait_for_operator ${namespace} ibm-zen-operator
+
+  update_zen_csv ${namespace}
+}
+
+function update_zen_csv() {
+  local namespace=$1
+
+  local zen_ingress_template_filename="zen-ingress-nginx.yaml.j2"
+  local zen_csv_jsonpatch_template_filename="zen-csv-jsonpatch-template.json"
+  local zen_ingress_tls_secret_name="cpd-ingress-tls-secret"
+
+  title "Update CSV to fix zen ingress template in zen operator ..."
+  tmp_dir=$(mktemp -d)
+
+  # Get zen operator version
+  zen_csv_name=$(kubectl -n ${namespace} get csv --no-headers -o name | grep ibm-zen-operator)
+  zen_operator_version=$(kubectl -n ${namespace} get ${zen_csv_name} -o jsonpath='{.spec.version}')
+  zen_operator_ingress_template_filepath="/opt/ansible/${zen_operator_version}/roles/0030-gateway/templates/${zen_ingress_template_filename}"
+
+  tmp_original_zen_ingress_template_filename="${zen_ingress_template_filename}.original"
+  tmp_original_zen_ingress_template_filepath="${tmp_dir}/${tmp_original_zen_ingress_template_filename}"
+  kubectl get cm -n ${namespace} ${zen_ingress_template_fixed_cm} -o jsonpath="{.data['${tmp_original_zen_ingress_template_filename//./\\.}']}" --ignore-not-found=true > ${tmp_original_zen_ingress_template_filepath}
+  if [[ ! -s ${tmp_original_zen_ingress_template_filepath} ]]; then
+    info "Creating ConfigMap ${zen_ingress_template_fixed_cm} containing fixed zen ingress template"
+    # get existing zen ingress template file content
+    zen_operator_name=$(kubectl get -n ${namespace} pod -l app.kubernetes.io/name=ibm-zen-operator -o jsonpath='{.items[0].metadata.name}')
+    kubectl exec -n ${namespace} -it ${zen_operator_name} -c ibm-zen-operator -- cat ${zen_operator_ingress_template_filepath} | \
+      # patch command used to format original template
+      kubectl patch -f - -p '{}' --type=merge --dry-run='client' -o yaml \
+        > ${tmp_original_zen_ingress_template_filepath}
+  else
+    info "Recreating ConfigMap ${zen_ingress_template_fixed_cm} containing fixed zen ingress template"
+    # delete configmap to recreate it
+    kubectl delete cm -n ${namespace} ${zen_ingress_template_fixed_cm}
+  fi
+  zen_ingress_host="$(cat ${tmp_original_zen_ingress_template_filepath} | grep "host:" | cut -d "'" -f 2)"
+  echo "Host extracted from original zen ingress template: ${zen_ingress_host}"
+
+  # Build fixed zen ingress template
+  # add cert-manager.io/issuer annotation to create ingress certificat (for azure support)
+  # add missing tls property (for azure support)
+  tmp_zen_ingress_template_filepath="${tmp_dir}/${zen_ingress_template_filename}"
+  cat ${tmp_original_zen_ingress_template_filepath} | \
+      kubectl patch -f - -p '{"metadata":{"annotations": { "cert-manager.io/issuer": "zen-tls-issuer"}}}' --type=merge --dry-run='client' -o yaml | \
+      kubectl patch -f - -p '{"spec":{"tls": [{"hosts": ["ZEN_INGRESS_HOST"], "secretName": "ZEN_INGRESS_TLS_SECRET"}]}}' --type=merge --dry-run='client' -o yaml \
+          > ${tmp_zen_ingress_template_filepath}
+  sed -i "s/ZEN_INGRESS_HOST/'${zen_ingress_host}'/g" ${tmp_zen_ingress_template_filepath}
+  sed -i "s/ZEN_INGRESS_TLS_SECRET/'${zen_ingress_tls_secret_name}'/g" ${tmp_zen_ingress_template_filepath}
+
+  # Create ConfigMap containing fixed zen ingress template
+  kubectl create cm -n ${namespace} ${zen_ingress_template_fixed_cm} --from-file=${tmp_zen_ingress_template_filepath} --from-file=${tmp_original_zen_ingress_template_filepath}
+  if [[ $? -ne 0 ]]; then
+    error "Error creating ${zen_ingress_template_fixed_cm} ConfigMap containing fixed zen ingress template."
+    exit 1
+  fi
+
+  info "Updating zen operator CSV to apply the fixed zen ingress template"
+  # Build CSV jsonpatch file
+  zen_csv_jsonpatch_filepath="${tmp_dir}/${zen_csv_jsonpatch_template_filename}"
+  cp "${current_dir}/${zen_csv_jsonpatch_template_filename}" ${zen_csv_jsonpatch_filepath}
+  sed -i "s/ZEN_INGRESS_CONFIGMAP/${zen_ingress_template_fixed_cm}/g" ${zen_csv_jsonpatch_filepath}
+  sed -i "s/ZEN_INGRESS_TEMPLATE_FILEPATH/${zen_operator_ingress_template_filepath//\//\\/}/g" ${zen_csv_jsonpatch_filepath}
+  sed -i "s/ZEN_INGRESS_TEMPLATE_FILENAME/${zen_ingress_template_filename}/g" ${zen_csv_jsonpatch_filepath}
+
+  # Apply jsonpatch to CSV
+  kubectl -n ${namespace} patch ${zen_csv_name} --patch-file=${zen_csv_jsonpatch_filepath} --type=json
+  
+  info "Done"
 }
 
 function create_ads_catalog_sources() {
@@ -399,6 +500,13 @@ function upgrade_ads_subscription() {
 
     csv=$(kubectl get csv -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
     kubectl delete csv ${csv} -n ${ads_namespace}
+
+    if ! ${is_openshift}; then
+        # Workaround for bug in zen ingress generation by zen operator on CNCF platform
+        # https://github.ibm.com/IBMPrivateCloud/roadmap/issues/66569
+        # Delete configmap containing fixed zen ingress template. It will be recreated in create_ads_subscription
+        kubectl delete cm ${zen_ingress_template_fixed_cm} --ignore-not-found
+    fi
 
     create_ads_subscription ${new_channel} ${ads_namespace}
 }
