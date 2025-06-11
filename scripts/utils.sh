@@ -284,7 +284,6 @@ function update_zen_csv() {
 
   local zen_ingress_template_filename="zen-ingress-nginx.yaml.j2"
   local zen_csv_jsonpatch_template_filename="zen-csv-jsonpatch-template.json"
-  local zen_ingress_tls_secret_name="cpd-ingress-tls-secret"
 
   title "Update CSV to fix zen ingress template in zen operator ..."
   tmp_dir=$(mktemp -d)
@@ -292,40 +291,27 @@ function update_zen_csv() {
   # Get zen operator version
   zen_csv_name=$(kubectl -n ${namespace} get csv --no-headers -o name | grep ibm-zen-operator)
   zen_operator_version=$(kubectl -n ${namespace} get ${zen_csv_name} -o jsonpath='{.spec.version}')
+   if [[ $? -ne 0 ]]; then
+    error "Error extracting version from ${zen_csv_name} CSV."
+    exit 1
+  fi
   zen_operator_ingress_template_filepath="/opt/ansible/${zen_operator_version}/roles/0030-gateway/templates/${zen_ingress_template_filename}"
 
-  tmp_original_zen_ingress_template_filename="${zen_ingress_template_filename}.original"
-  tmp_original_zen_ingress_template_filepath="${tmp_dir}/${tmp_original_zen_ingress_template_filename}"
-  kubectl get cm -n ${namespace} ${zen_ingress_template_fixed_cm} -o jsonpath="{.data['${tmp_original_zen_ingress_template_filename//./\\.}']}" --ignore-not-found=true > ${tmp_original_zen_ingress_template_filepath}
-  if [[ ! -s ${tmp_original_zen_ingress_template_filepath} ]]; then
-    info "Creating ConfigMap ${zen_ingress_template_fixed_cm} containing fixed zen ingress template"
-    # get existing zen ingress template file content
-    zen_operator_name=$(kubectl get -n ${namespace} pod -l app.kubernetes.io/name=ibm-zen-operator -o jsonpath='{.items[0].metadata.name}')
-    kubectl exec -n ${namespace} -it ${zen_operator_name} -c ibm-zen-operator -- cat ${zen_operator_ingress_template_filepath} | \
-      # patch command used to format original template
-      kubectl patch -n ${namespace} -f - -p '{}' --type=merge --dry-run='client' -o yaml \
-        > ${tmp_original_zen_ingress_template_filepath}
-  else
-    info "Recreating ConfigMap ${zen_ingress_template_fixed_cm} containing fixed zen ingress template"
-    # delete configmap to recreate it
-    kubectl delete cm -n ${namespace} ${zen_ingress_template_fixed_cm}
+  info "Deleting ConfigMap ${zen_ingress_template_fixed_cm} containing fixed zen ingress template if existing"
+  kubectl delete cm -n ${namespace} ${zen_ingress_template_fixed_cm} --ignore-not-found=true
+  if [[ $? -ne 0 ]]; then
+    error "Error deleting ${zen_ingress_template_fixed_cm} ConfigMap."
+    exit 1
   fi
-  zen_ingress_host="$(cat ${tmp_original_zen_ingress_template_filepath} | grep "host:" | cut -d "'" -f 2)"
-  echo "Host extracted from original zen ingress template: ${zen_ingress_host}"
 
-  # Build fixed zen ingress template
-  # add cert-manager.io/issuer annotation to create ingress certificat (for azure support)
-  # add missing tls property (for azure support)
-  tmp_zen_ingress_template_filepath="${tmp_dir}/${zen_ingress_template_filename}"
-  cat ${tmp_original_zen_ingress_template_filepath} | \
-      kubectl patch -f - -p '{"metadata":{"annotations": { "cert-manager.io/issuer": "zen-tls-issuer"}}}' --type=merge --dry-run='client' -o yaml | \
-      kubectl patch -f - -p '{"spec":{"tls": [{"hosts": ["ZEN_INGRESS_HOST"], "secretName": "ZEN_INGRESS_TLS_SECRET"}]}}' --type=merge --dry-run='client' -o yaml \
-          > ${tmp_zen_ingress_template_filepath}
-  sed -i "s/ZEN_INGRESS_HOST/'${zen_ingress_host}'/g" ${tmp_zen_ingress_template_filepath}
-  sed -i "s/ZEN_INGRESS_TLS_SECRET/'${zen_ingress_tls_secret_name}'/g" ${tmp_zen_ingress_template_filepath}
-
-  # Create ConfigMap containing fixed zen ingress template
-  kubectl create cm -n ${namespace} ${zen_ingress_template_fixed_cm} --from-file=${tmp_zen_ingress_template_filepath} --from-file=${tmp_original_zen_ingress_template_filepath}
+  info "Creating ConfigMap ${zen_ingress_template_fixed_cm} containing fixed zen ingress template"
+  # Use zen ingress template containing these fixes:
+  # - add cert-manager.io/issuer annotation to create ingress certificat (for azure support)
+  # - add missing tls property (for azure support)
+  # - remove wrong "namespace" annotation
+  # - add missing metadata.namespace
+  tmp_zen_ingress_template_filepath="${current_dir}/${zen_ingress_template_filename}"
+  kubectl create cm -n ${namespace} ${zen_ingress_template_fixed_cm} --from-file=${tmp_zen_ingress_template_filepath}
   if [[ $? -ne 0 ]]; then
     error "Error creating ${zen_ingress_template_fixed_cm} ConfigMap containing fixed zen ingress template."
     exit 1
@@ -341,6 +327,10 @@ function update_zen_csv() {
 
   # Apply jsonpatch to CSV
   kubectl -n ${namespace} patch ${zen_csv_name} --patch-file=${zen_csv_jsonpatch_filepath} --type=json
+  if [[ $? -ne 0 ]]; then
+    error "Error patching ${zen_csv_name} CSV."
+    exit 1
+  fi
   
   info "Done"
 }
