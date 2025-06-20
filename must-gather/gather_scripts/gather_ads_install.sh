@@ -40,6 +40,7 @@ gather_log ""
 
 get_k8s_resource configmap kube-public common-service-maps
 
+get_all_k8s_resource catalogsource "$ads_namespace"
 get_all_k8s_resource subscription "$ads_namespace"
 get_all_k8s_resource csv "$ads_namespace"
 get_all_k8s_resource installplan "$ads_namespace"
@@ -51,8 +52,30 @@ get_all_k8s_resource pvc "$ads_namespace"
 
 get_all_k8s_resource ads "$ads_namespace"
 get_all_k8s_resource zenservice "$ads_namespace"
+get_all_k8s_resource authentication.operator.ibm.com "$ads_namespace"
+
+get_all_k8s_resource cluster.postgresql.k8s.enterprisedb.io "$ads_namespace"
+
+get_all_k8s_resource svc "$ads_namespace"
+get_all_k8s_resource endpoints "$ads_namespace"
+get_all_k8s_resource networkpolicy "$ads_namespace"
+
+get_all_k8s_resource deployment "$ads_namespace"
+get_all_k8s_resource sts "$ads_namespace"
+get_all_k8s_resource ds "$ads_namespace"
+get_all_k8s_resource cronjob "$ads_namespace"
+get_all_k8s_resource job "$ads_namespace"
 
 get_all_k8s_resource pod "$ads_namespace"
 get_all_pod_logs "$ads_namespace"
 
 get_all_k8s_resource ingress "$ads_namespace"
+
+get_all_k8s_resource hpa "$ads_namespace"
+get_all_k8s_resource resourcequota "$ads_namespace"
+get_all_k8s_resource event "$ads_namespace"
+
+get_all_k8s_resource certificates.cert-manager.io "$ads_namespace"
+get_all_k8s_resource issuers.cert-manager.io "$ads_namespace"
+get_all_k8s_resource challenges.acme.cert-manager.io "$ads_namespace"
+get_all_k8s_resource orders.acme.cert-manager.io "$ads_namespace"

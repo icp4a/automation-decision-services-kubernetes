@@ -86,10 +86,6 @@ printf "Gathering resources from ADS install..."
 "$gather_scripts"/gather_ads_install.sh -n "$ads_namespace" -s "$since" -d "$output_dir" -l
 printf " done.\n"
 
-printf "Gathering ADS component versions..."
-"$gather_scripts"/gather_ads_versions.sh -n "$ads_namespace" -d "$output_dir" -l
-printf " done.\n"
-
 gather_log ""
 gather_log "End time: $(date)"
 

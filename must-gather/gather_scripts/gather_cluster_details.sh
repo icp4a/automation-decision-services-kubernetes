@@ -34,3 +34,12 @@ gather_log "Listing namespaces."
 
 gather_log "Listing storage classes."
 "$KUBECTL" get storageclass -o yaml >"$cluster_outdir/storageclasses.yaml" 2>>"$outfile"
+
+gather_log "Listing persistent volumes."
+"$KUBECTL" get pv -o yaml >"$cluster_outdir/pv.yaml" 2>>"$outfile"
+
+gather_log "Listing CRD."
+"$KUBECTL" get crd -o yaml >"$cluster_outdir/crd.yaml" 2>>"$outfile"
+
+gather_log "Listing cluster issuers."
+"$KUBECTL" get clusterissuers.cert-manager.io -o yaml >"$cluster_outdir/clusterissuers.yaml" 2>>"$outfile"

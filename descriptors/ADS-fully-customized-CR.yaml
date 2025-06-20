@@ -2,18 +2,22 @@
 ##
 ## Licensed Materials - Property of IBM
 ##
-## (C) Copyright IBM Corp. 2023, 2024. All Rights Reserved.
+## (C) Copyright IBM Corp. 2023, 2025. All Rights Reserved.
 ##
 ## US Government Users Restricted Rights - Use, duplication or
 ## disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
 ##
 ###############################################################################
 
-# This file is a sample of a resource file for Automation Decision Services (ADS)
-# where all parameters are exposed with their default value. It is intended for documentation purpose.
-# For real installations, a typical resource should generally contain only the required
-# parameters.  This will ease maintenance and upgrade to newer versions of ADS.
+      This file is a sample of a resource file for Automation Decision Services (ADS)
+      where all parameters are exposed with their default value.
+      It is not intended for direct use, but for extensive documentation of the parameters.
 
+      WARNING: For real installations, it is advised to start with the 'minimal' CR samples and 
+      add only the parameters required for the use case.
+      This will ease maintenance and upgrade to newer versions of ADS.
+
+---
 apiVersion: ads.ibm.com/v1
 kind: AutomationDecisionService
 metadata:
@@ -22,8 +26,8 @@ metadata:
   name: "sample"
 
 spec:
-  # Required: if this value is not "24.0.1" the operator ignores this resource.
-  version: "24.0.1"
+  # Required: if this value is not "25.0.0" the operator ignores this resource.
+  version: "25.0.0"
 
   license:
     # Required: used to accept license, the only valid value only is the boolean true.
@@ -54,7 +58,7 @@ spec:
   #  # the pod and must exist locally on all worker nodes.  For example: `/profiles/fine-grained.json`.
   #  # localhost_profile: ""
 
-  # Default storage class name used for Zen and Automation Decision Services.
+  # Default storage class name used for Zen.
   # Can be overridden in specific sections, such as spec.zen.block_storage_classname.
   # Not setting this storage_class_name (or setting it to null) means that the default storage class of the Kubernetes cluster is used.
   # Modifying this parameter after the initial installation has not effect.
@@ -83,76 +87,34 @@ spec:
     # By default, with the small profile for ADS, Zen is instanciated with the starterset scale config
     scale_config: "starterset"
 
-  mongo:
-    # Controls usage of the embeded MongoDB instance.  Usage of this embedded MongoDB instance is not recommended in production.
-    # By default, this embedded mongo instance is not used, and an external instance must be provided.
-    # If you provide an external mongo db, fill the mongo connection string in the admin secret referenced below.
-    use_embedded: false
-
-    # Name of secret providing connection details for the external MongoDB instance.
-    # When using the embedded MongoDB instance, this secret will be created and managed by the ADS operator.
-    admin_secret_name: "sample-ads-mongo-secret"
-
-    # When using the embedded MongoDB instance, this persistence section controls the persistence volume of this instance.
-    persistence:
-      # When enabled, a persistent volume is used to store data of the embedded MongoDB instance,
-      # otherwise the data is stored on an ephemeral volume.
-      enabled: true
-
-      # Activate the dynamic provisionning of Persistent Volume for the embedded MongoDB instance.
-      # If enabled, the storage_class_name parameter is considered for configuration of this dynamic provisionning.
-      use_dynamic_provisioning: true
-
-      # If use_dynamic_provisioning is true, define the name of the storage class that is required for the persistent
-      # volume of the embedded MongoDB instance.
-      # Not setting this storage_class_name (or setting it to null) means using the default storage class of the cluster.
-      # This parameter cannot be changed after installation. This setting is ignored when dynamic provisionning is disabled.
-      storage_class_name: null
-
-      resources:
-        requests:
-          # The size of the persistent volume (PV) requested through a Persistent Value Claim (PVC) for the embedded
-          # MongoDB instance. A string that represents a Kubernetes byte quantity.
-          storage: "3Gi"
-
-    # Set the runAsUser parameter of the security context of the pod for the embedded MongoDB instance,
-    # overriding the general ADS parameter spec.run_as_user.
-    # By default, no runAsUser parameter is set on pods for the embedded MongoDB instance.
-    #run_as_user: 50001
-
-    # Set the fsGroup  parameter of the security context of the pod for the embedded MongoDB instance.
-    # The default setting doesn't set a value for this parameter, letting the default Kubernetes cluster behavior apply.
-    # Note that on OpenShift Container Platform (OCP) and Red Hat OpenShift Kubernetes Service (ROKS), the runAsGroup
-    # parameter is set to 0 on these pods.
-    #fs_group: 0
-
-    # CPU and memory settings for the embedded MongoDB instance.
-    # This sample shows the default values for the small deployment profile.
-    # This setting overrides the default value inherited from the deployment profile.
-    resources:
-      requests:
-        cpu: '500m'
-        memory: '256Mi'
-        ephemeral_storage: '100Mi'
-      limits:
-        cpu: '1000m'
-        memory: '1Gi'
-        ephemeral_storage: '500Mi'
-
-    # Optional set of custom labels to set on pods of the embedded MongoDB instance.
-    # Label names and values must be strings, not prefixed with "kubernetes.io/" or "ads.ibm.com/"
-    labels: {}
-
-    # Configure liveness and readiness probes for the pods of the embedded MongoDB instance.
-    liveness_probe:
-      timeout_seconds: 7
-    readiness_probe:
-      timeout_seconds: 7
-
-
   decision_designer:
     # Controls whether Decision Designer is deployed or not.
     enabled: false
+
+    database:
+      # A flag to control whether to use the embedded PostgreSQL database or not.
+      # When it is set to true, a dedicated PostgreSQL server is automatically installed, and Decision Designer is configured to use it.
+      use_embedded: false 
+
+      # The name of the schema in the database for Decision Designer.
+      current_schema: ads
+
+      # Hostname of the remote PostgreSQL server. 
+      # Required if database.use_embedded is false.
+      hostname: 
+
+      # The name of the database for Decision Designer in the PostgreSQL server. 
+      name: adsdesigner
+
+      # TCP port number of the remote PostgreSQL server.
+      port: 5432
+
+      # The name of the secret with credentials for roles to connect to the PostgreSQL database.
+      secret_name: "sample-ads-designer-database"
+
+      # The level of TLS protection when Decision Designer is connecting to the remote PostgreSQL server. 
+      # Valid modes are disable, allow, prefer, require, verify-ca and verify-full. These modes are defined in https://www.postgresql.org/docs/current/libpq-ssl.html 
+      ssl_mode: verify-full
 
     # The name of the secret that contains all the Decision Designer sensitive data, like encryption key for
     # sensitive data.
@@ -310,45 +272,39 @@ spec:
     # Controls whether the Decision runtime is deployed or not.
     enabled: false
 
+    database:
+      # A flag to control whether to use the embedded PostgreSQL database or not.
+      # When it is set to true, a dedicated PostgreSQL server is automatically installed, and Decision Runtime is configured to use it.
+      use_embedded: false 
+
+      # The name of the schema in the database for Decision Runtime.
+      current_schema: ads
+
+      # Hostname of the remote PostgreSQL server. 
+      # Required if database.use_embedded is false.
+      hostname: 
+
+      # The name of the database for Decision Runtime in the PostgreSQL server. 
+      name: adsruntime
+
+      # TCP port number of the remote PostgreSQL server.
+      port: 5432
+
+      # The name of the secret with credentials for roles to connect to the PostgreSQL database.
+      secret_name: "sample-ads-runtime-database"
+
+      # The level of TLS protection when Decision Runtime is connecting to the remote PostgreSQL server. 
+      # Valid modes are disable, allow, prefer, require, verify-ca and verify-full. These modes are defined in https://www.postgresql.org/docs/current/libpq-ssl.html 
+      ssl_mode: verify-full
+
     # The name of the secret that contains all the Decision runtime sensitive data, like encryption key for sensitive data
     # and the credentials for specific management accounts.
-    admin_secret_name: "sample-ads-designer-secret"
-
-    # The type of storage for decision archives.  Either "fs" or "s3".
-    # When using the "fs" value, see the persistence section below.
-    # When using the "s3" value, see the s3 section below.
-    archive_storage_type: "fs"
+    admin_secret_name: "sample-ads-runtime-secret"
 
     # You can specify a profile size for the ADS runtime if different from the rest of ADS.
     # Valid values are small,medium,large - default is small.
     # Resources in this file are reflecting small profile ones.
     #deployment_profile_size: "small"
-
-    # Configuration of the decision archive storage on S3.
-    # Applies when the archive_storage_type is set to "s3".
-    s3:
-      # The following bucket_name, region, server_url are mandatory parameters to identify the S3 bucket
-      # for the decision archive storage.
-      bucket_name: ""
-      region: ""
-      server_url: ""
-
-      # Storage region is required depending on the type of S3 compatible server that is targeted.
-      storage_region: ""
-
-      # Name of secret containing the credentials for access to the S3 bucket.
-      # Leave empty if no authentication is required by the S3 server.
-      secret_name: ""
-
-      # The S3 connection timeout, in milliseconds. A value of 0 means an infinite timeout
-      # and is not recommended.
-      connection_timeout: 10000
-
-      # The timeout for an S3 request, in milliseconds. A zero or negative value disables this feature.
-      request_timeout: 0
-
-      # Delay, in days, for actual deletion of a decision archive after is has been requested.
-      deployment_space_deletion_delay: 0
 
     # Optional set of custom labels to set on pods of all components of the decision runtime.
     # Label names and values must be strings, not prefixed with "kubernetes.io/" or "ads.ibm.com/"
@@ -437,29 +393,6 @@ spec:
         threads: 0
         # Interval in milliseconds between decision selection results cache updates.
         update_interval: 120000 # 2 minutes
-
-      # Configuration of the decision archive storage on file-system.
-      # Applies when the archive_storage_type is set to "fs".
-      persistence:
-        # When enabled, a persistent volume is used to store data of the decision runtime,
-        # otherwise the data is stored on an ephemeral volume.
-        enabled: true
-
-        # Activate the dynamic provisionning of the Persistent Volume.
-        # If enabled, the storage_class_name parameter is considered for configuration of this dynamic provisionning.
-        use_dynamic_provisioning: true
-
-        # If use_dynamic_provisioning is true, define the name of the storage class that is required for the persistent volume.
-        # Not setting this storage_class_name (or setting it to null) means using the default storage class. This parameter
-        # cannot be changed after installation.
-        # This setting is ignored when dynamic provisionning is disabled.
-        storage_class_name: null
-
-        resources:
-          requests:
-            # The size of the persistent volume (PV) requested through a Persistent Value Claim (PVC). A string that
-            # represents a Kubernetes byte quantity.
-            storage: "1Gi"
 
       # Whether the decision runtime should include an exception stack trace when an incident occurs.
       # This should only be used for debugging purposes, as a stack trace may expose sensitive internal data.

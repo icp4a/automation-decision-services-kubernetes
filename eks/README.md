@@ -2,46 +2,6 @@
 
 This directory contains resources specific to Amazon Elastic Kubernetes Service (EKS).  
 
-## Storage class
-
-When you use the embedded MongoDB instance of Automation Decision Services and/or use the file system storage for decision service archives, you must use an [EFS storage class](https://docs.aws.amazon.com/eks/latest/userguide/efs-csi.html). It allows access from multiple pods and nodes.  
-
-A dedicated storage class must be configured to set permissions compatible with Automation Decision Services requirements.  The `uid` parameter must be set to `50001`, and the `directoryPerms` parameter must be set to allow full access to the uid.
-
-For example:
-
-```
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: efs-for-ads
-parameters:
-  fileSystemId: <your EFS file-system id>
-  basePath: /dynamic_provisioning_for_ads
-  directoryPerms: "770"
-  uid: "50001"
-  gid: "0"
-  provisioningMode: efs-ap
-provisioner: efs.csi.aws.com
-reclaimPolicy: Delete
-volumeBindingMode: Immediate
-```
-
-Then, set the following Automation Decision Services parameters in the Automation Decision Services CR to use this storage class:
-
-```
-spec:
-  mongo:
-    run_as_user: 50001
-    persistence:
-      storage_class_name: efs-for-ads
-
-  decision_runtime:
-    decision_runtime_service:
-          persistence:
-             storage_class_name: efs-for-ads
-```
-
 ## Certificate management
 
 You have to use a x509 certificate with a distinguished name that matches your `.subdomain.my-company.com` name, which is presented by your Network Load Balancer.  

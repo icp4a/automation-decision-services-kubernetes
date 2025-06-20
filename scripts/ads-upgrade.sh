@@ -14,6 +14,7 @@ function show_help() {
 
 ads_namespace=""
 is_openshift=false
+channel_found=""
 
 while getopts "h?n:" opt; do
     case "$opt" in
@@ -83,10 +84,10 @@ function check_prereqs() {
         error "Cannot find common services version in namespace ${ads_namespace}, is ADS installed in this namespace?"
         exit 1
     elif [[ $(semver_compare ${vcs} ${cs_minimal_version_for_upgrade}) == "-1" ]]; then
-        error "Detected common services version ${vcs} in namespace ${ads_namespace} which is not greater or equals to version ${cs_minimal_version_for_upgrade}, are you upgrading from a ${ads_channel_previous_version} version?"
+        error "Detected common services version ${vcs} in namespace ${ads_namespace} which is not greater or equals to version ${cs_minimal_version_for_upgrade}, are you upgrading from ${ads_channel_previous_version} version(s)?"
         exit 1
     elif [[ $(semver_compare ${vcs} ${cs_maximal_version_for_upgrade}) != "-1" ]]; then
-        error "Detected common services version ${vcs} in namespace ${ads_namespace} which is not lower to version ${cs_maximal_version_for_upgrade}, are you upgrading from a ${ads_channel_previous_version} version?"
+        error "Detected common services version ${vcs} in namespace ${ads_namespace} which is not lower to version ${cs_maximal_version_for_upgrade}, are you upgrading from ${ads_channel_previous_version} version(s)?"
         exit 1
     else
         success "Detected common services version ${vcs}."
@@ -94,21 +95,30 @@ function check_prereqs() {
 }
 
 function check_subscription() {
-    local channel=$(kubectl get sub ibm-ads-${ads_channel_previous_version} -n ${ads_namespace} -o jsonpath='{.spec.channel}')
-    if [ "${channel}" = "${ads_channel_previous_version}" ]; then
-        info "Found ADS subscription to the expected channel."
-    else
-        error "Cannot find ADS subscription in namespace ${ads_namespace} or its channel is not ${ads_channel_previous_version}. Are you upgrading from a ${ads_channel_previous_version} version?"
-        exit 1
+  local list=(${ads_channel_previous_version//,/ })
+  local sub_found=false
+
+  for item in "${list[@]}"; do
+    local channel=$(kubectl get sub "ibm-ads-${item}" -n ${ads_namespace} -o jsonpath='{.spec.channel}' 2>/dev/null)
+    if [ "${channel}" = "${item}" ]; then
+      sub_found=true
+      channel_found=${channel}
+      break
     fi
+  done
+
+  if [[ ! $sub_found ]]; then
+    error "Cannot find ADS subscription in namespace ${ads_namespace} with an expected version. Are you upgrading from ${ads_channel_previous_version} version?"
+    exit 1
+  fi 
 }
 
 
 function upgrade {
     check_prereqs
-    check_subscription
+    check_subscription "${ads_channel_previous_version}"
     create_ads_catalog_sources
-    upgrade_ads_subscription ${ads_channel_previous_version} ${ads_channel}
+    upgrade_ads_subscription ${channel_found} ${ads_channel}
 }
 
 # --- Run ---

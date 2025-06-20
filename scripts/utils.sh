@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+sed=${SED_CMD:-sed}
+
 function msg() {
     printf '%b\n' "$1"
 }
@@ -306,6 +308,7 @@ function update_zen_csv() {
 
   info "Creating ConfigMap ${zen_ingress_template_fixed_cm} containing fixed zen ingress template"
   # Use zen ingress template containing these fixes:
+  # - remove kubernetes.io/ingress.class annotation because the property ingressClassName is defined (for rancher support)
   # - add cert-manager.io/issuer annotation to create ingress certificat (for azure support)
   # - add missing tls property (for azure support)
   # - remove wrong "namespace" annotation
@@ -321,9 +324,9 @@ function update_zen_csv() {
   # Build CSV jsonpatch file
   zen_csv_jsonpatch_filepath="${tmp_dir}/${zen_csv_jsonpatch_template_filename}"
   cp "${current_dir}/${zen_csv_jsonpatch_template_filename}" ${zen_csv_jsonpatch_filepath}
-  sed -i "s/ZEN_INGRESS_CONFIGMAP/${zen_ingress_template_fixed_cm}/g" ${zen_csv_jsonpatch_filepath}
-  sed -i "s/ZEN_INGRESS_TEMPLATE_FILEPATH/${zen_operator_ingress_template_filepath//\//\\/}/g" ${zen_csv_jsonpatch_filepath}
-  sed -i "s/ZEN_INGRESS_TEMPLATE_FILENAME/${zen_ingress_template_filename}/g" ${zen_csv_jsonpatch_filepath}
+  ${sed} -i "s/ZEN_INGRESS_CONFIGMAP/${zen_ingress_template_fixed_cm}/g" ${zen_csv_jsonpatch_filepath}
+  ${sed} -i "s/ZEN_INGRESS_TEMPLATE_FILEPATH/${zen_operator_ingress_template_filepath//\//\\/}/g" ${zen_csv_jsonpatch_filepath}
+  ${sed} -i "s/ZEN_INGRESS_TEMPLATE_FILENAME/${zen_ingress_template_filename}/g" ${zen_csv_jsonpatch_filepath}
 
   # Apply jsonpatch to CSV
   kubectl -n ${namespace} patch ${zen_csv_name} --patch-file=${zen_csv_jsonpatch_filepath} --type=json
@@ -341,10 +344,9 @@ function create_ads_catalog_sources() {
   # Only create common services catalog if installed version is lower than the version in catalog referenced by cs_catalog_image variable
   local vcs=$(get_common_service_version ${ads_namespace})
   if [[ "$vcs" == "unknown" || $(semver_compare ${vcs} ${common_services_version}) == "-1" ]]; then
-      create_catalog_source opencloud-operators "IBM CS Install Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
-      create_catalog_source ibm-cs-im-operators "IBM IAM Operator Catalog" ${cs_im_catalog_image} ${ads_namespace} ${is_openshift}
-      create_catalog_source ibm-zen-operators "IBM Zen Operator Catalog" ${zen_catalog_image} ${ads_namespace} ${is_openshift}
-
+      create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
+      create_catalog_source cs-im-operators "IBMCS IM Operators" ${cs_im_catalog_image} ${ads_namespace} ${is_openshift}
+      create_catalog_source cs-zen-operators "IBMCS Zen Operators" ${zen_catalog_image} ${ads_namespace} ${is_openshift}
   fi
   
   create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${ads_namespace} ${is_openshift}
@@ -462,13 +464,40 @@ function upgrade_ads_subscription() {
     kubectl delete sub ${sub} -n ${ads_namespace}
 
     sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-im-operator | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
+    # Subscription name depends of common service version
+    if [[ ! -z ${sub} ]]; then
+      kubectl delete sub ${sub} -n ${ads_namespace}
+    fi
+    
+    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-iam-operator | cut -d ' ' -f 1)
+    # Subscription name depends of common service version
+    if [[ ! -z ${sub} ]]; then
+      kubectl delete sub ${sub} -n ${ads_namespace}
+    fi
 
     sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-idp-config-ui-operator | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
+    # Subscription name depends of common service version
+    if [[ ! -z ${sub} ]]; then
+      kubectl delete sub ${sub} -n ${ads_namespace}
+    fi
+
+    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-commonui-operator-app | cut -d ' ' -f 1)
+     # Subscription name depends of common service version
+    if [[ ! -z ${sub} ]]; then
+      kubectl delete sub ${sub} -n ${ads_namespace}
+    fi
 
     sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-platformui-operator | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
+    # Subscription name depends of common service version
+    if [[ ! -z ${sub} ]]; then
+      kubectl delete sub ${sub} -n ${ads_namespace}
+    fi
+
+    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-zen-operator | cut -d ' ' -f 1)
+    # Subscription name depends of common service version
+    if [[ ! -z ${sub} ]]; then
+      kubectl delete sub ${sub} -n ${ads_namespace}
+    fi
 
     sub=$(kubectl get sub -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
     kubectl delete sub ${sub} -n ${ads_namespace}
@@ -553,7 +582,7 @@ function add_target_namespace_to_operator_group() {
     local operator_group_namespace=$3
 
     # extract target namespaces and convert the json array to a bash array
-    target_namespaces=($(echo $(kubectl get operatorgroup -n ${operator_group_namespace} ${operator_group_name} -o jsonpath='{.spec.targetNamespaces}') | tr -d '[]" ' | sed 's/,/ /g'))
+    target_namespaces=($(echo $(kubectl get operatorgroup -n ${operator_group_namespace} ${operator_group_name} -o jsonpath='{.spec.targetNamespaces}') | tr -d '[]" ' | ${sed} 's/,/ /g'))
 
     # check if already contains the namespace
     for i in "${target_namespaces[@]}"
