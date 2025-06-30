@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+sed=${SED_CMD:-sed}
+
 function msg() {
     printf '%b\n' "$1"
 }
@@ -321,9 +323,9 @@ function update_zen_csv() {
   # Build CSV jsonpatch file
   zen_csv_jsonpatch_filepath="${tmp_dir}/${zen_csv_jsonpatch_template_filename}"
   cp "${current_dir}/${zen_csv_jsonpatch_template_filename}" ${zen_csv_jsonpatch_filepath}
-  sed -i "s/ZEN_INGRESS_CONFIGMAP/${zen_ingress_template_fixed_cm}/g" ${zen_csv_jsonpatch_filepath}
-  sed -i "s/ZEN_INGRESS_TEMPLATE_FILEPATH/${zen_operator_ingress_template_filepath//\//\\/}/g" ${zen_csv_jsonpatch_filepath}
-  sed -i "s/ZEN_INGRESS_TEMPLATE_FILENAME/${zen_ingress_template_filename}/g" ${zen_csv_jsonpatch_filepath}
+  ${sed} -i "s/ZEN_INGRESS_CONFIGMAP/${zen_ingress_template_fixed_cm}/g" ${zen_csv_jsonpatch_filepath}
+  ${sed} -i "s/ZEN_INGRESS_TEMPLATE_FILEPATH/${zen_operator_ingress_template_filepath//\//\\/}/g" ${zen_csv_jsonpatch_filepath}
+  ${sed} -i "s/ZEN_INGRESS_TEMPLATE_FILENAME/${zen_ingress_template_filename}/g" ${zen_csv_jsonpatch_filepath}
 
   # Apply jsonpatch to CSV
   kubectl -n ${namespace} patch ${zen_csv_name} --patch-file=${zen_csv_jsonpatch_filepath} --type=json
@@ -553,7 +555,7 @@ function add_target_namespace_to_operator_group() {
     local operator_group_namespace=$3
 
     # extract target namespaces and convert the json array to a bash array
-    target_namespaces=($(echo $(kubectl get operatorgroup -n ${operator_group_namespace} ${operator_group_name} -o jsonpath='{.spec.targetNamespaces}') | tr -d '[]" ' | sed 's/,/ /g'))
+    target_namespaces=($(echo $(kubectl get operatorgroup -n ${operator_group_namespace} ${operator_group_name} -o jsonpath='{.spec.targetNamespaces}') | tr -d '[]" ' | ${sed} 's/,/ /g'))
 
     # check if already contains the namespace
     for i in "${target_namespaces[@]}"
