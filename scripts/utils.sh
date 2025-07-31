@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+sed=${SED_CMD:-sed}
+
 function msg() {
     printf '%b\n' "$1"
 }
@@ -434,7 +436,7 @@ function add_target_namespace_to_operator_group() {
     local operator_group_namespace=$3
 
     # extract target namespaces and convert the json array to a bash array
-    target_namespaces=($(echo $(kubectl get operatorgroup -n ${operator_group_namespace} ${operator_group_name} -o jsonpath='{.spec.targetNamespaces}') | tr -d '[]" ' | sed 's/,/ /g'))
+    target_namespaces=($(echo $(kubectl get operatorgroup -n ${operator_group_namespace} ${operator_group_name} -o jsonpath='{.spec.targetNamespaces}') | tr -d '[]" ' | ${sed} 's/,/ /g'))
 
     # check if already contains the namespace
     for i in "${target_namespaces[@]}"

@@ -74,6 +74,16 @@ gather_log "  gather logs since: $since"
 gather_log ""
 gather_log "Start time: $(date)"
 
+if ! $KUBECTL get ns "$ads_namespace" >/dev/null  2>&1; then
+   printf "ADS namespace '$ads_namespace' doesn't exist\n"
+   exit 1
+fi
+
+if ! $KUBECTL get ns "$olm_namespace" >/dev/null  2>&1; then
+   printf "OLM namespace '$olm_namespace' doesn't exist\n"
+   exit 1
+fi
+
 printf "Gathering cluster details..."
 "$gather_scripts"/gather_cluster_details.sh -d "$output_dir" -l
 printf " done.\n"

@@ -83,11 +83,11 @@ function replace() {
   info "Writing kubernetes manifests to ${output_file}"
 
   cp "${current_dir}/${template_file}" ${output_file}
-  sed -i "s/NAMESPACE/${ads_namespace}/g" ${output_file}
-  sed -i "s/HOST/${cp_console_hostname}/g" ${output_file}
-  sed -i "s/DOMAIN/${domain_name}/g" ${output_file}
-  sed -i "s/CLIENT_ID/${client_id}/g" ${output_file}
-  sed -i "s/LICENSING_NS/${licensing_namespace}/g" ${output_file}
+  ${sed} -i "s/NAMESPACE/${ads_namespace}/g" ${output_file}
+  ${sed} -i "s/HOST/${cp_console_hostname}/g" ${output_file}
+  ${sed} -i "s/DOMAIN/${domain_name}/g" ${output_file}
+  ${sed} -i "s/CLIENT_ID/${client_id}/g" ${output_file}
+  ${sed} -i "s/LICENSING_NS/${licensing_namespace}/g" ${output_file}
 
   # add nginx.ingress.kubernetes.io/proxy-buffer-size annotations to zen ingress
   echo "" >> ${output_file}
@@ -111,7 +111,7 @@ function replace() {
       kubectl patch -f - -p '{"metadata":{"annotations":{"cert-manager.io/issuer":"zen-tls-issuer"}}}' --type=merge --dry-run='client' -o yaml  \
         > ${tmp_zen_ingress_work}
       cat ${tmp_zen_ingress_work} > ${tmp_zen_ingress} && rm ${tmp_zen_ingress_work}
-      sed -i "s/CPD_HOST/ads-cpd.${domain_name}/g" ${tmp_zen_ingress}
+      ${sed} -i "s/CPD_HOST/ads-cpd.${domain_name}/g" ${tmp_zen_ingress}
     fi
 
     cat ${tmp_zen_ingress} >> ${output_file}
