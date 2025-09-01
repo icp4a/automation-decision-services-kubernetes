@@ -1,9 +1,9 @@
 name: ibm-ads
-version: 25.0.0
-description: List of CASEs required for air gapped deployment of ADS 25.0.0
+version: 25.0.1
+description: List of CASEs required for air gapped deployment of ADS 25.0.0-IF001
 cases:
 - name: ibm-ads
-  version: 25.0.0
+  version: 25.0.1
   launch: true
 - name: ibm-cp-common-services
   version: 4.6.2
