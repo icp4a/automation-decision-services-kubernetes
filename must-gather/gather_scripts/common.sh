@@ -15,7 +15,7 @@ function gather_log() {
 }
 
 # a go-template for display of secrets resources without confidential values
-GATHER_SECRET_TEMPLATE='Secret {{.metadata.name}}{{println}}uid: {{.metadata.uid}}{{println}}ownerReferences:{{println}}  {{.metadata.ownerReferences}}{{println}}labels: {{println}}  {{.metadata.labels}}{{println}}data:{{println}}{{range $k, $v := .data}}  {{$k}}: <redacted>{{println}}{{end}}'
+GATHER_SECRET_TEMPLATE='Secret {{.metadata.name}}{{println}}uid: {{.metadata.uid}}{{println}}ownerReferences:{{println}}  {{.metadata.ownerReferences}}{{println}}labels: {{println}}  {{.metadata.labels}}{{println}}data:{{println}}{{range $k, $v := .data}}  {{$k}}: {{if or (eq $k "ca.crt") (eq $k "tls.crt") }}{{$v|base64decode}}{{else}}<redacted>{{end}}{{println}}{{end}}'
 
 # Extract a field from a k8s resource.
 # Logs to outfile on error (missing resource or missing property).
