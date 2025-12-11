@@ -1,6 +1,6 @@
 TERMS AND CONDITIONS FOR SEPARATELY LICENSED CODE
 
-IBM Automation Decision Services 25.0.0
+IBM Automation Decision Services 25.0.1
 
 The IBM license agreement and any applicable information on the web
 download page for IBM products refers Licensee to this file for details
@@ -29,26 +29,12 @@ TABLE OF CONTENTS
 
 THIS NON-IBM-LICENSE FILE CONSISTS OF THE FOLLOWING SECTIONS:
 
-CC-BY-3.0
 GPL-3.0
   - GPL-3.0-only
-RedHat UBI 8.10, 9.4, 9.5
+RedHat UBI-9.4,9.5,9.6
 
 
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-CREATIVE COMMONS ATTRIBUTION 3.0
-
-The Program includes some or all of the following works licensed under
-the Creative Commons.
-The url to the license is https://creativecommons.org/licenses/by/3.0/legalcode
-
-jq | copyright (C) 2012 Stephen Dolan | https://github.com/jqlang/jq?tab=License-1-ov-file
-
-END OF CREATIVE COMMONS ATTRIBUTION 3.0 NON-IBM-LICENSE INFORMATION
-
-
-
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -66,23 +52,22 @@ the IBM product and the GPL-licensed program for which you are
 requesting the source code.
 
 envtpl
-Ubuntu Main OS
-Alpine Main OS
 Debian Main OS
 
 END OF GNU GENERAL PUBLIC LICENSE, VERSION 3 NON-IBM-LICENSE INFORMATION
+
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-RedHat UBI 8.10, 9.4, 9.5
+REDHAT UNIVERSAL BASE IMAGE v9.4,9.5,9.6
 
-REDHAT UNIVERSAL BASE IMAGE
+RedHat UBI has been taken under EULA > https://www.redhat.com/licenses/eulas
 
-RedHat UBI v8.10, 9.4, 9.5 has been taken under EULA > https://www.redhat.com/licenses/eulas
-The Program maybe provided with third party software programs subject to their own license terms.
+
+The Program maybe provided with third party software programs subject to their own license terms.  
+
 The license terms either accompany the third party software programs or, in some instances, maybe may be viewed at >
-https://access.redhat.com/containers/
 
-END OF REDHAT UBI NON-IBM-LICENSE
+https://access.redhat.com/containers/
 
 
 END OF NON-IBM-LICENSE INFORMATION
@@ -91,6 +76,6 @@ END OF NON-IBM-LICENSE INFORMATION
 END OF NON-IBM-LICENSE INFORMATION FILE
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-L/N: L-FSCS-CBWVGE
-D/N: L-FSCS-CBWVGE
-P/N: L-FSCS-CBWVGE
+L/N: L-FJVU-23GPQ2
+D/N: L-FJVU-23GPQ2
+P/N: L-FJVU-23GPQ2

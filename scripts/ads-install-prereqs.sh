@@ -38,8 +38,10 @@ fi
 
 function create_pre_req_catalog_sources() {
   title "Creating pre-req catalog sources ..."
-  if ! ${existing_cert_manager}; then
-    create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-${cert_manager_channel} ${cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
+  if ! ${is_openshift}; then
+    if ! ${existing_cert_manager}; then
+      create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-${ibm_cert_manager_channel_on_cncf} ${ibm_cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
+    fi
   fi
   if ! ${existing_licensing_service}; then
     create_catalog_source ibm-licensing-catalog ibm-licensing-${licensing_service_channel} ${licensing_catalog_image} ${olm_namespace} ${is_openshift}
@@ -49,19 +51,21 @@ function create_pre_req_catalog_sources() {
 function create_operator_groups() {
   title "Creating operator groups if needed ..."
 
+  local cert_manager_namespace
   if ! ${existing_cert_manager}; then
-    create_namespace ibm-cert-manager
+    create_namespace "${cert_manager_operator_namespace}"
+
     kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: ibm-cert-manager
-  namespace: ibm-cert-manager
+  name: ${cert_manager_operator_namespace}
+  namespace: ${cert_manager_operator_namespace}
 spec:
   upgradeStrategy: Default
 EOF
     if [[ $? -ne 0 ]]; then
-        error "Error creating ibm-cert-manager operator group."
+        error "Error creating ${cert_manager_operator_namespace} operator group."
     fi
   fi
 
@@ -104,7 +108,7 @@ function create_subscriptions() {
   fi
 
   if ! ${existing_cert_manager}; then
-    create_ibm_certificate_manager_subscription ${olm_namespace} ${cert_manager_channel} 
+    create_certificate_manager_subscription ${olm_namespace}
   fi
 
 }
@@ -159,6 +163,7 @@ function check_cert_manager() {
        info "A certificate manager is already installed in this cluster, ADS will use it."
        existing_cert_manager=true
     fi
+    init_cert_manager_properties
 }
 
 function check_licensing_service() {

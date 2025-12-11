@@ -1,4 +1,4 @@
-The translated license terms can be viewed here: https://www14.software.ibm.com/cgi-bin/weblap/lap.pl?li_formnum=L-FSCS-CBWVGE
+The translated license terms can be viewed here: https://www14.software.ibm.com/cgi-bin/weblap/lap.pl?li_formnum=L-FJVU-23GPQ2
 
 IMPORTANT: READ CAREFULLY
 
@@ -24,7 +24,7 @@ LICENSE INFORMATION
 The Programs listed below are licensed under the following License Information terms and conditions in addition to the Program license terms previously agreed to by Client and IBM. If Client does not have previously agreed to license terms in effect for the Program, the International License Agreement for Evaluation of Programs (i125-5543-06) applies.
 
 Program Name (Program Number):
-IBM Automation Decision Services 25.0.0 (Evaluation)
+IBM Automation Decision Services 25.0.1 (Evaluation)
 
 The following standard terms apply to Licensee's use of the Program.
 
@@ -73,7 +73,7 @@ LICENSE INFORMATION
 The Programs listed below are licensed under the following License Information terms and conditions in addition to the Program license terms previously agreed to by Client and IBM. If Client does not have previously agreed to license terms in effect for the Program, the International Program License Agreement (i125-3301-15) applies.
 
 Program Name (Program Number):
-IBM Automation Decision Services 25.0.0 ((5900-AUD))
+IBM Automation Decision Services 25.0.1 (5900-AUD)
 
 The following standard terms apply to Licensee's use of the Program.
 
@@ -137,9 +137,9 @@ Use of Usage Metering Data
 The Program enables use of a usage metering dashboard (the "Dashboard") that enables the display and monitoring of certain data and metrics regarding Licensee's deployment and usage of IBM and non-IBM software programs, as well as the computing environment on which they are deployed ("Usage Metering Data"). Usage of the Dashboard requires registration on either the Red Hat Marketplace or IBM Software Central. Licensee's usage of the Dashboard and IBM's use and sharing of Usage Metering Data are governed by the terms of the Service Description for the Red Hat Marketplace, Operated by IBM, available here: https://www.ibm.com/support/customer/csol/terms?id=i126-8719, and if Licensee enables or uses the Dashboard, Licensee agrees to those terms.
 
 
-L/N: L-FSCS-CBWVGE
-D/N: L-FSCS-CBWVGE
-P/N: L-FSCS-CBWVGE
+L/N: L-FJVU-23GPQ2
+D/N: L-FJVU-23GPQ2
+P/N: L-FJVU-23GPQ2
 
 IMPORTANT: READ CAREFULLY
 

@@ -88,34 +88,6 @@ function replace() {
   ${sed} -i "s/DOMAIN/${domain_name}/g" ${output_file}
   ${sed} -i "s/CLIENT_ID/${client_id}/g" ${output_file}
   ${sed} -i "s/LICENSING_NS/${licensing_namespace}/g" ${output_file}
-
-  # add nginx.ingress.kubernetes.io/proxy-buffer-size annotations to zen ingress
-  echo "" >> ${output_file}
-  echo "---" >> ${output_file}
-
-  tmp_zen_ingress=$(mktemp)
-
-  kubectl get ingress zen-ingress -n ${ads_namespace} -o yaml | \
-    # remove system properties
-    kubectl patch -f - -p '{"metadata":{"creationTimestamp": null, "generation": null, "ownerReferences": null, "resourceVersion": null, "uid": null}, "status":null}' --type=merge --dry-run='client' -o yaml | \
-    # add annotation
-    kubectl patch -f - -p '{"metadata":{"annotations":{"nginx.ingress.kubernetes.io/proxy-buffer-size":"8k"}}}' --type=merge --dry-run='client' -o yaml \
-      > ${tmp_zen_ingress}
-
-    if [[ "${tls_termination}" = true ]]; then
-      tmp_zen_ingress_work=$(mktemp)
-      # add tls section
-      # kubectl patch -f ${tmp_zen_ingress} -p='[{"op": "add", "path": "/spec", "value": {"tls": { "hosts": ["CPD_HOST"], "secretName": "cpd-ingress-tls-secret" }}}]' --type=json --dry-run='client' -o yaml | \
-      kubectl patch -f ${tmp_zen_ingress} -p '{"spec": {"tls": [{"hosts": ["CPD_HOST"], "secretName": "cpd-ingress-tls-secret" }]}}' --type=merge --dry-run='client' -o yaml | \
-      # add annotation
-      kubectl patch -f - -p '{"metadata":{"annotations":{"cert-manager.io/issuer":"zen-tls-issuer"}}}' --type=merge --dry-run='client' -o yaml  \
-        > ${tmp_zen_ingress_work}
-      cat ${tmp_zen_ingress_work} > ${tmp_zen_ingress} && rm ${tmp_zen_ingress_work}
-      ${sed} -i "s/CPD_HOST/ads-cpd.${domain_name}/g" ${tmp_zen_ingress}
-    fi
-
-    cat ${tmp_zen_ingress} >> ${output_file}
-    rm ${tmp_zen_ingress}
 }
 
 function generate() {

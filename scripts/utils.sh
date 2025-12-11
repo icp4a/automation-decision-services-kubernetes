@@ -244,98 +244,6 @@ EOF
     wait_for_operator "${namespace}" "ibm-ads-kn-operator"
     wait_for_operator "${namespace}" "ibm-common-service-operator"
     wait_for_operator "${namespace}" "operand-deployment-lifecycle-manager"
-
-    if ! ${is_openshift}; then
-        # Workaround for bug in zen ingress generation by zen operator on CNCF platform
-        # https://github.ibm.com/IBMPrivateCloud/roadmap/issues/66569
-        fix_zen_operator ${ads_namespace}
-    fi
-}
-
-zen_ingress_template_fixed_cm="zen-ingress-nginx-template-fixed"
-
-function fix_zen_operator() {
-  local namespace=$1
-
-  kubectl apply -f - <<EOF
-apiVersion: operator.ibm.com/v1alpha1
-kind: OperandRequest
-metadata:
-  name: ads-operand-request
-  namespace: ${namespace}
-spec:
-  requests:
-  - operands:
-    - name: ibm-platformui-operator
-    registry: common-service
-    registryNamespace: ${namespace}
-EOF
-
-  if [[ $? -ne 0 ]]; then
-    error "Error creating ads-operand-request operandrequest."
-  fi
-
-  info "Waiting for ibm-zen-operator subscription to become active."
-  wait_for_operator ${namespace} ibm-zen-operator
-
-  update_zen_csv ${namespace}
-}
-
-function update_zen_csv() {
-  local namespace=$1
-
-  local zen_ingress_template_filename="zen-ingress-nginx.yaml.j2"
-  local zen_csv_jsonpatch_template_filename="zen-csv-jsonpatch-template.json"
-
-  title "Update CSV to fix zen ingress template in zen operator ..."
-  tmp_dir=$(mktemp -d)
-
-  # Get zen operator version
-  zen_csv_name=$(kubectl -n ${namespace} get csv --no-headers -o name | grep ibm-zen-operator)
-  zen_operator_version=$(kubectl -n ${namespace} get ${zen_csv_name} -o jsonpath='{.spec.version}')
-   if [[ $? -ne 0 ]]; then
-    error "Error extracting version from ${zen_csv_name} CSV."
-    exit 1
-  fi
-  zen_operator_ingress_template_filepath="/opt/ansible/${zen_operator_version}/roles/0030-gateway/templates/${zen_ingress_template_filename}"
-
-  info "Deleting ConfigMap ${zen_ingress_template_fixed_cm} containing fixed zen ingress template if existing"
-  kubectl delete cm -n ${namespace} ${zen_ingress_template_fixed_cm} --ignore-not-found=true
-  if [[ $? -ne 0 ]]; then
-    error "Error deleting ${zen_ingress_template_fixed_cm} ConfigMap."
-    exit 1
-  fi
-
-  info "Creating ConfigMap ${zen_ingress_template_fixed_cm} containing fixed zen ingress template"
-  # Use zen ingress template containing these fixes:
-  # - remove kubernetes.io/ingress.class annotation because the property ingressClassName is defined (for rancher support)
-  # - add cert-manager.io/issuer annotation to create ingress certificat (for azure support)
-  # - add missing tls property (for azure support)
-  # - remove wrong "namespace" annotation
-  # - add missing metadata.namespace
-  tmp_zen_ingress_template_filepath="${current_dir}/${zen_ingress_template_filename}"
-  kubectl create cm -n ${namespace} ${zen_ingress_template_fixed_cm} --from-file=${tmp_zen_ingress_template_filepath}
-  if [[ $? -ne 0 ]]; then
-    error "Error creating ${zen_ingress_template_fixed_cm} ConfigMap containing fixed zen ingress template."
-    exit 1
-  fi
-
-  info "Updating zen operator CSV to apply the fixed zen ingress template"
-  # Build CSV jsonpatch file
-  zen_csv_jsonpatch_filepath="${tmp_dir}/${zen_csv_jsonpatch_template_filename}"
-  cp "${current_dir}/${zen_csv_jsonpatch_template_filename}" ${zen_csv_jsonpatch_filepath}
-  ${sed} -i "s/ZEN_INGRESS_CONFIGMAP/${zen_ingress_template_fixed_cm}/g" ${zen_csv_jsonpatch_filepath}
-  ${sed} -i "s/ZEN_INGRESS_TEMPLATE_FILEPATH/${zen_operator_ingress_template_filepath//\//\\/}/g" ${zen_csv_jsonpatch_filepath}
-  ${sed} -i "s/ZEN_INGRESS_TEMPLATE_FILENAME/${zen_ingress_template_filename}/g" ${zen_csv_jsonpatch_filepath}
-
-  # Apply jsonpatch to CSV
-  kubectl -n ${namespace} patch ${zen_csv_name} --patch-file=${zen_csv_jsonpatch_filepath} --type=json
-  if [[ $? -ne 0 ]]; then
-    error "Error patching ${zen_csv_name} CSV."
-    exit 1
-  fi
-  
-  info "Done"
 }
 
 function create_ads_catalog_sources() {
@@ -380,30 +288,44 @@ EOF
   wait_for_operator ${namespace} ibm-licensing-operator
 }
 
+function init_cert_manager_properties () {
+  if ${is_openshift}; then
+    cert_manager_channel="${redhat_cert_manager_channel_on_ocp}"
+    cert_manager_catalog_name="redhat-operators"
+    cert_manager_operator_name="openshift-cert-manager-operator"
+    cert_manager_operator_namespace="cert-manager-operator"
+    cert_manager_csv_base_name="cert-manager-operator"
+  else
+    cert_manager_channel="${ibm_cert_manager_channel_on_cncf}"
+    cert_manager_catalog_name="ibm-cert-manager-catalog"
+    cert_manager_operator_name="ibm-cert-manager-operator"
+    cert_manager_operator_namespace="ibm-cert-manager"
+    cert_manager_csv_base_name="ibm-cert-manager-operator"
+  fi
+}
 
-function create_ibm_certificate_manager_subscription() {
+function create_certificate_manager_subscription() {
   local olm_namespace=$1
-  local channel=$2
 
   kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: ibm-cert-manager-operator
-  namespace: ibm-cert-manager
+  name: cert-manager
+  namespace: ${cert_manager_operator_namespace}
 spec:
-  channel: ${channel}
+  channel: ${cert_manager_channel}
   installPlanApproval: Automatic
-  name: ibm-cert-manager-operator
-  source: ibm-cert-manager-catalog
+  name: ${cert_manager_operator_name}
+  source: ${cert_manager_catalog_name}
   sourceNamespace: ${olm_namespace}
 EOF
   if [[ $? -ne 0 ]]; then
-      error "Error creating ibm-cert-manager subscription."
+      error "Error creating cert-manager subscription."
   fi
 
-  info "Waiting for ibm-cert-manager subscription to become active."
-  wait_for_operator ibm-cert-manager ibm-cert-manager-operator
+  info "Waiting for cert-manager subscription to become active."
+  wait_for_operator ${cert_manager_operator_namespace} ${cert_manager_csv_base_name}
 }
 
 function get_licensing_service_version() {
@@ -411,21 +333,17 @@ function get_licensing_service_version() {
   get_type_from_label "csv" "app.kubernetes.io/name=ibm-licensing" "{.items[0].spec.version}" "${namespace}"
 }
 
-function get_cert_manager_version() {
-  local namespace=$1
+function get_cert_manager_csv_name() {
+  local namespace=${cert_manager_operator_namespace}
+
   local path="{.spec.version}"
 
-  local csv_name=$(kubectl get csv -n ${namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f1)
+  local csv_name=$(kubectl get csv -n ${namespace} | grep "cert-manager-operator" | cut -d ' ' -f1)
   
   if [[ -z ${csv_name} ]]; then
       echo "unknown"
   else
-    kubectl get csv -n ${namespace} ${csv_name} -o jsonpath="${path}" >/dev/null 2>&1
-    if [ $? -eq 0 ]; then
-      echo $(kubectl get csv -n ${namespace} ${csv_name} -o jsonpath="${path}")
-    else
-      echo "unknown"
-    fi
+    echo "${csv_name}"
   fi
 }
 
@@ -521,10 +439,9 @@ function upgrade_ads_subscription() {
     kubectl delete csv ${csv} -n ${ads_namespace}
 
     if ! ${is_openshift}; then
-        # Workaround for bug in zen ingress generation by zen operator on CNCF platform
+        # Remove workaround for for fixed bug in zen ingress generation by zen operator on CNCF platform
         # https://github.ibm.com/IBMPrivateCloud/roadmap/issues/66569
-        # Delete configmap containing fixed zen ingress template. It will be recreated in create_ads_subscription
-        kubectl delete cm ${zen_ingress_template_fixed_cm} --ignore-not-found
+        kubectl delete cm "zen-ingress-nginx-template-fixed" --ignore-not-found
     fi
 
     create_ads_subscription ${new_channel} ${ads_namespace}

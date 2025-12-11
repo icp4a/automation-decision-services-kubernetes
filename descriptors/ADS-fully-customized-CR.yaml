@@ -26,8 +26,8 @@ metadata:
   name: "sample"
 
 spec:
-  # Required: if this value is not "25.0.0" the operator ignores this resource.
-  version: "25.0.0"
+  # Required: if this value is not "25.0.1" the operator ignores this resource.
+  version: "25.0.1"
 
   license:
     # Required: used to accept license, the only valid value only is the boolean true.
@@ -71,7 +71,7 @@ spec:
 
   # Set the runAsUser parameter of the security context of the pods of Automation Decision Services.
   # On OpenShift Container Platform (OCP) and Red Hat OpenShift Kubernetes Service (ROKS), this parameter has no effect and no runAsUser parameter is set on pods.
-  # On other Kubernetes clusters, the default value is 50001, except for the embedded MongoDB instance (see below).
+  # On other Kubernetes clusters, the default value is 50001.
   #run_as_user: 50001
 
   # These parameters configure the installation of the Zen instance that is triggered by this ADS instance.
@@ -92,16 +92,12 @@ spec:
     enabled: false
 
     database:
-      # A flag to control whether to use the embedded PostgreSQL database or not.
-      # When it is set to true, a dedicated PostgreSQL server is automatically installed, and Decision Designer is configured to use it.
-      use_embedded: false 
-
       # The name of the schema in the database for Decision Designer.
       current_schema: ads
 
       # Hostname of the remote PostgreSQL server. 
-      # Required if database.use_embedded is false.
-      hostname: 
+      # Required 
+      hostname: <hostname>
 
       # The name of the database for Decision Designer in the PostgreSQL server. 
       name: adsdesigner
@@ -273,10 +269,6 @@ spec:
     enabled: false
 
     database:
-      # A flag to control whether to use the embedded PostgreSQL database or not.
-      # When it is set to true, a dedicated PostgreSQL server is automatically installed, and Decision Runtime is configured to use it.
-      use_embedded: false 
-
       # The name of the schema in the database for Decision Runtime.
       current_schema: ads
 

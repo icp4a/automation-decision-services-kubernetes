@@ -15,7 +15,6 @@ function show_help() {
 licensing_namespace="ibm-licensing"
 is_openshift=false
 upgrade_licensing_service=false
-upgrade_cert_manager=false
 
 while getopts "h?n:" opt; do
     case "$opt" in
@@ -31,7 +30,7 @@ done
 function check_prereqs() {
     title "Checking prereqs ..."
     check_command kubectl
-
+    
     oc_version=$(kubectl get clusterversion version -o=jsonpath={.status.desired.version} 2>/dev/null)
     if [[ ! -z ${oc_version} ]]; then
       info "openshift version ${oc_version} detected."
@@ -66,19 +65,12 @@ function check_prereqs() {
     fi
 
     ## Check Certificate manager
-    local vcm=$(get_cert_manager_version ${licensing_namespace}) # available in all namespaces, so also in ibm-licensing one.
-    if [[ "$vcm" == "unknown" ]]; then
-      upgrade_cert_manager=false
-      info "IBM certificate manager is not used, it will not be upgraded."
-    elif [[ $(semver_compare ${vcm} ${cert_manager_minimal_version_for_upgrade}) == "-1" ]]; then
-      error "Detected IBM certificate manager version ${vcm} which is not greater or equals to version ${cert_manager_minimal_version_for_upgrade}. Cannot upgrade."
-      exit 1
-    elif [[ $(semver_compare ${vcm} ${cert_manager_target_version}) == "-1" ]]; then
-      success "IBM certificate manager version v${vcm} found. Will upgrade it."
-      upgrade_cert_manager=true
+    init_cert_manager_properties
+    local csv_name=$(get_cert_manager_csv_name)
+    if [[ "$csv_name" == "unknown" ]]; then
+      info "Unknown certificate manager."
     else
-      success "IBM Certificate manager is already version ${vcm}, leave it untouched."
-      upgrade_cert_manager=false
+      success "Detected certificate manager from CSV ${csv_name}."
     fi
 }
 
@@ -86,10 +78,6 @@ function upgrade_prereqs_catalog_sources() {
   if ${upgrade_licensing_service}; then
     title "Creating licensing service catalog sources..."
     create_catalog_source ibm-licensing-catalog ibm-licensing-${licensing_service_channel} ${licensing_catalog_image} ${olm_namespace} ${is_openshift}
-  fi
-  if ${upgrade_cert_manager}; then
-    title "Creating IBM certificate manager catalog sources..."
-    create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-${cert_manager_channel} ${cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
   fi
 }
 
@@ -104,18 +92,6 @@ function upgrade_subscription_prereqs() {
       kubectl delete csv ${csv} -n ${licensing_namespace}
 
       create_licensing_service_subscription ${licensing_namespace} ${olm_namespace} ${licensing_service_channel}
-    fi
-
-    if ${upgrade_cert_manager}; then
-        title "Ugrading certificate manager..."
-        local cert_manager_sub_namespace=$(kubectl get sub -A | grep ibm-cert-manager-operator | cut -d ' ' -f 1)
-        sub=$(kubectl get sub ibm-cert-manager-operator -n ${cert_manager_sub_namespace} -o jsonpath='{.metadata.name}')
-        kubectl delete sub ${sub} -n ${cert_manager_sub_namespace}
-
-        csv=$(kubectl get csv -n ${cert_manager_sub_namespace} | grep ibm-cert-manager-operator | cut -d ' ' -f 1)
-        kubectl delete csv ${csv} -n ${cert_manager_sub_namespace}
-
-        create_ibm_certificate_manager_subscription ${olm_namespace} ${cert_manager_channel} 
     fi
 }
 

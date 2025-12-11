@@ -6,7 +6,7 @@ metadata:
 spec:
   license:
     accept: true
-  version: "25.0.0"
+  version: "25.0.1"
 
   zen:
     block_storage_classname: gp2
@@ -14,9 +14,45 @@ spec:
   decision_designer:
     enabled: true
     database:
-      embedded: true
+      # The name of the schema in the database for Decision Designer.
+      current_schema: ads
+
+      # Hostname of the remote PostgreSQL server. 
+      # Required 
+      hostname: <hostname>
+
+      # The name of the database for Decision Designer in the PostgreSQL server. 
+      name: adsdesigner
+
+      # TCP port number of the remote PostgreSQL server.
+      port: 5432
+
+      # The name of the secret with credentials for roles to connect to the PostgreSQL database.
+      secret_name: "sample-ads-designer-database"
+
+      # The level of TLS protection when Decision Designer is connecting to the remote PostgreSQL server. 
+      # Valid modes are disable, allow, prefer, require, verify-ca and verify-full. These modes are defined in https://www.postgresql.org/docs/current/libpq-ssl.html 
+      ssl_mode: verify-full
 
   decision_runtime:
     enabled: true
     database:
-      embedded: true
+      # The name of the schema in the database for Decision Runtime.
+      current_schema: ads
+
+      # Hostname of the remote PostgreSQL server. 
+      # Required 
+      hostname: <hostname>
+
+      # The name of the database for Decision Runtime in the PostgreSQL server. 
+      name: adsruntime
+
+      # TCP port number of the remote PostgreSQL server.
+      port: 5432
+
+      # The name of the secret with credentials for roles to connect to the PostgreSQL database.
+      secret_name: "sample-ads-runtime-database"
+
+      # The level of TLS protection when Decision Runtime is connecting to the remote PostgreSQL server. 
+      # Valid modes are disable, allow, prefer, require, verify-ca and verify-full. These modes are defined in https://www.postgresql.org/docs/current/libpq-ssl.html 
+      ssl_mode: verify-full

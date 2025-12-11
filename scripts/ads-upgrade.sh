@@ -68,14 +68,12 @@ function check_prereqs() {
     fi
 
     ## Check certificate manager
-    local vcm=$(get_cert_manager_version ${ads_namespace})
-    if [[ "$vcm" == "unknown" ]]; then
-        info "Not using IBM cert manager."
-    elif [[ $(semver_compare ${vcm} ${cert_manager_target_version}) == "-1" ]]; then
-        error "Detected IBM certificate manager version ${vcm} which is not greater or equals to version ${cert_manager_target_version}. Please upgrade pre-requisites with ads-upgrade-prereqs.sh script."
-        exit 1
+    init_cert_manager_properties
+    local csv_name=$(get_cert_manager_csv_name)
+    if [[ "$csv_name" == "unknown" ]]; then
+      info "Unknown certificate manager."
     else
-        success "IBM certificate manager ${vcm} found."
+      success "Detected certificate manager from CSV ${csv_name}."
     fi
 
     # Check Common services version
