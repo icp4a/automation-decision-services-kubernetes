@@ -107,7 +107,7 @@ function check_subscription() {
     fi
   done
 
-  if [[ ! $sub_found ]]; then
+  if [[ "$sub_found" != "true" ]]; then
     error "Cannot find ADS subscription in namespace ${ads_namespace} with an expected version. Are you upgrading from ${ads_channel_previous_version} version?"
     exit 1
   fi 
