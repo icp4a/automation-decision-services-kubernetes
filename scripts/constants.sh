@@ -6,11 +6,11 @@ olm_version=v0.27.0
 ads_channel_previous_version=v24.0
 
 licensing_service_channel=v4.2
-licensing_service_target_version="4.2.8"
+licensing_service_target_version="4.2.20"
 cert_manager_channel=v4.2
-cert_manager_target_version="4.2.8"
+cert_manager_target_version="4.2.20"
 ads_channel=v24.1
-common_services_version=4.9.0 # Common Service version to install
+common_services_version=4.17.0 # Common Service version to install
 
 licensing_service_minimal_version_for_upgrade="4.2.0"
 cert_manager_minimal_version_for_upgrade="4.2.0"
@@ -21,12 +21,12 @@ cs_maximal_version_for_upgrade="5.0.0" # Maximal supported Common Service versio
 cs_minimal_version_for_ifix="4.6.2" # Minimal supported Common Service version before upgrading for ifix
 cs_maximal_version_for_ifix="5.0.0" # Maximal supported Common Service version before upgrading for ifix
 
-licensing_catalog_image="icr.io/cpopen/ibm-licensing-catalog@sha256:5a67decdd3513fefd99e165cc6cb2798937d42031230819f6d5b4fa54a5f28c1" # IBM License Manager 4.2.11 from https://github.com/IBM/cloud-pak/tree/master/repo/case/ibm-licensing/4.2.11
-cert_manager_catalog_image="icr.io/cpopen/ibm-cert-manager-operator-catalog@sha256:1c9e4a2a2abddfcdcb95898f14aecd3ab9e59bd388fb38de335118d1c36651e3" # IBM Certificate Manager 4.2.11 from https://github.com/IBM/cloud-pak/tree/master/repo/case/ibm-cert-manager/4.2.11
+licensing_catalog_image="icr.io/cpopen/ibm-licensing-catalog@sha256:734017cedb6605a4aba3a2de54c0ccb8e314e7b533ec0e30a362fa315ef8e1dd" # IBM License Manager 4.2.20 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-licensing/4.2.20/OLM/catalog-sources.yaml
+cert_manager_catalog_image="icr.io/cpopen/ibm-cert-manager-operator-catalog@sha256:97610d00d5b46b4de8d3c98233591cc554b7211d96f3d30ed935a84f076e3b65" # IBM Certificate Manager 4.2.20 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cert-manager/4.2.20/OLM/catalog-sources.yaml
 
-cs_catalog_image="icr.io/cpopen/ibm-cs-install-catalog@sha256:470042a694cbf29be89107acb702f84ade88c0bbdeb900b8e0833602fb7eda69" # IBM Cloud Foundational Services 4.10.0 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cs-install/4.10.0/OLM/catalog-sources.yaml
-cs_im_catalog_image="icr.io/cpopen/ibm-iam-operator-catalog@sha256:250b994930c96151d1688017c3622f33278b1f8d636323fa7660b3927f2cf47c" # IBM CS IM Operator Catalog 4.9.0 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cs-iam/4.9.0/OLM/catalog-sources.yaml
-zen_catalog_image="icr.io/cpopen/ibm-zen-operator-catalog@sha256:6fe8ccd964fc6a008d3479b81876ea7d57b58e0ea3c4e9a7d62e3c18b3793ce6" # IBM Zen Operator Catalog 6.1.0+20241120.004836.207 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-zen/6.1.0%2B20241120.004836.207/OLM/catalog-sources.yaml
-ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:4e7de77151861bd69e021988011dc850c6811757c8cadd3f0548e5c99d292485" # 24.0.1-IF006
-edb_catalog_image="icr.io/cpopen/ibm-cpd-cloud-native-postgresql-operator-catalog@sha256:3b867e7e0879ec24b5058e5db01c0a9be8d9d8d5ef2b7bb1bb7e247babb8b96d" # Cloud Native PostgresSQL 1.22.7 (CASE 4.30.0+20241023.165233.2074) from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cloud-native-postgresql/4.30.0%2B20241023.165233.2074/OLM/catalog-sources.yaml
 
+cs_catalog_image="icr.io/cpopen/ibm-cs-install-catalog@sha256:993ed6ac8869fd996472867fefb1469c54b75b62f31415d4ac90e7aec96ede26" # IBM Cloud Foundational Services 4.17.0 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cs-install/4.17.0/OLM/catalog-sources.yaml
+cs_im_catalog_image="icr.io/cpopen/ibm-iam-operator-catalog@sha256:3c6a75939ccdef91c27442564c388294e02704a7c4acf14e3146090734b026f4" # IBM CS IM Operator Catalog 4.16.0 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cs-iam/4.16.0/OLM/catalog-sources.yaml
+zen_catalog_image="icr.io/cpopen/ibm-zen-operator-catalog@sha256:9a02519e5ab679f0807fc5b7cfc5fc96242961bee0e1d3144012d33e925e6a99" # IBM Zen Operator Catalog 6.4.0+20260210.170932.92 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-zen/6.4.0%2B20260210.170932.92/OLM/catalog-sources.yaml
+ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:d60af6e9b13f3d6932fa4719c6b01793c4f2439d3aa971dff07d8b54b75414f2" # 24.0.1-IF007
+edb_catalog_image="icr.io/cpopen/ibm-cpd-cloud-native-postgresql-operator-catalog@sha256:af4ac35100a8b93b36a9cb31c9cdf40fb190a0d78d29e4d5408b0d867a100a42" # Cloud Native PostgresSQL Version 1.25.5 (CASE 5.31.0+20260129.161021.2713) from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cloud-native-postgresql/5.31.0%2B20260129.161021.2713/OLM/catalog-sources.yaml

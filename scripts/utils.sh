@@ -453,45 +453,61 @@ function get_type_from_label() {
   fi
 }
 
+function delete_subscription_by_pattern() {
+    local namespace=$1
+    local pattern=$2
+    local use_extended_regex=${3:-false}
+
+    local grep_opts=""
+    if [[ "${use_extended_regex}" == "true" ]]; then
+        grep_opts="-E"
+    fi
+
+    local sub
+    sub=$(kubectl get sub -n ${namespace} | grep ${grep_opts} "${pattern}" | cut -d ' ' -f 1)
+    if [[ -n "${sub}" ]]; then
+        kubectl delete sub ${sub} -n ${namespace}
+    else
+        info "No subscription matching pattern '${pattern}' found in namespace ${namespace}"
+    fi
+}
+
+function delete_csv_by_pattern() {
+    local namespace=$1
+    local pattern=$2
+
+    local csv
+    csv=$(kubectl get csv -n ${namespace} | grep "${pattern}" | cut -d ' ' -f 1)
+    if [[ -n "${csv}" ]]; then
+        kubectl delete csv ${csv} -n ${namespace}
+    else
+        info "No CSV matching pattern '${pattern}' found in namespace ${namespace}"
+    fi
+}
+
 function upgrade_ads_subscription() {
     local old_channel=$1
     local new_channel=$2
 
+    # Delete subscriptions
     local sub=$(kubectl get sub ibm-ads-${old_channel} -n ${ads_namespace} -o jsonpath='{.metadata.name}')
     kubectl delete sub ${sub} -n ${ads_namespace}
 
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-im-operator | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-idp-config-ui-operator | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-platformui-operator | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
+    delete_subscription_by_pattern ${ads_namespace} "ibm-common-service-operator"
+    delete_subscription_by_pattern ${ads_namespace} "ibm-i[a]?m-operator" true
+    delete_subscription_by_pattern ${ads_namespace} "ibm-idp-config-ui-operator"
+    delete_subscription_by_pattern ${ads_namespace} "ibm-platformui-operator"
+    delete_subscription_by_pattern ${ads_namespace} "operand-deployment-lifecycle-manager"
+    delete_subscription_by_pattern ${ads_namespace} "ibm-commonui-operator-app"
+    delete_subscription_by_pattern ${ads_namespace} "ibm-zen-operator"
     
-    local csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-ads-kn-operator.${old_channel} | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-commonui-operator | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-iam-operator | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-zen-operator | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
+    # Delete CSVs
+    delete_csv_by_pattern ${ads_namespace} "ibm-ads-kn-operator.${old_channel}"
+    delete_csv_by_pattern ${ads_namespace} "ibm-common-service-operator"
+    delete_csv_by_pattern ${ads_namespace} "ibm-commonui-operator"
+    delete_csv_by_pattern ${ads_namespace} "ibm-iam-operator"
+    delete_csv_by_pattern ${ads_namespace} "ibm-zen-operator"
+    delete_csv_by_pattern ${ads_namespace} "operand-deployment-lifecycle-manager"
 
     if ! ${is_openshift}; then
         # Workaround for bug in zen ingress generation by zen operator on CNCF platform
