@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Convert json log entries typically output by ADS containers to line-style logs
+# Convert json log entries typically output by DI CMS containers to line-style logs
 # more readable by humains.
 #
 # Reads on stdin, output on stdout.
@@ -16,30 +16,43 @@ import re
 import string
 
 # For debug of this script, print the input json before the processed output
-DUMP_JSON=os.environ.get('DUMP_JSON')
+DUMP_JSON = os.environ.get('DUMP_JSON')
 
-def gettimestamp(e):
+
+def get_timestamp(e):
     try:
         return e['@timestamp']
     except KeyError:
-        return e['ibm_datetime']
+        try:
+            return e['ibm_datetime']
+        except:
+            return e['eventTime']
 
-def gethostname(e):
-    h = ''
-    if 'host' in e:
-        h = e['host']
+def find(path, json):
+    # recursive search if the log is structured
     try:
-        return h['name']
-    except TypeError:
-        return h
+        key = path[:path.index(".")]
+        val = json[key]
+        if isinstance(val, dict):
+            return find(path[path.index(".") + 1:], val)
+        else:
+            return val
+    except ValueError:
+        return json.get(path, "")
+    except KeyError:
+        try:
+            return json.get(path, "")
+        except KeyError:
+            return "-"
 
-def decodeRawLines(lines):
+
+def decode_raw_lines(lines):
     msg = bytearray()
     for l in lines:
         l = l.strip()
         l = l[6:54].strip()
         codes_str = re.split(" +", l)
-        #print(codes_str)
+        # print(codes_str)
         for i in codes_str:
             c = int(i, 16)
             if chr(c) in string.printable:
@@ -49,17 +62,57 @@ def decodeRawLines(lines):
 
     return msg.decode('ascii', 'ignore')
 
-def getstacktrace(j):
-    s = j.get('exception', None)
-    if s:
-        msg = "%s:%s\n" % (s['exceptionType'], s['message'])
-        for f in s['frames']:
-            msg += "   %s::%s:%s\n" % (f['class'], f['method'], f.get('line', "<unknown line>"))
-        return msg
-    s = j.get('stack_trace', None)
-    if not s:
-        s = j.get('ibm_stackTrace', None)
-    return s
+
+def liberty_access_logs(j):
+    path = j.get('ibm_uriPath', '')
+    if (not path.endswith('alive') and not path.endswith('ready')) or ('-p' in sys.argv or '-probes' in sys.argv):
+        print(
+            f"{get_timestamp(j)} {j.get('ibm_uriPath', '')} {j.get('ibm_userAgent', '')} {j.get('ibm_elapsedTime', '')}  {j.get('ibm_responseCode', '')} {j.get('correlationId', '')}")
+
+
+def ecs_access_logs(j):
+    path = find('url.path', j)
+    if (not path.endswith('alive') and not path.endswith('ready') and not path == '/metrics') or ( '-p' in sys.argv or '-probes' in sys.argv):
+        print(
+            f"{get_timestamp(j)} {find('http.request.method', j)} {find('url.path', j)} {find('agent.type', j)} {find('event.duration', j)} {find('http.response.status_code', j)} {j.get('correlation-id', '')}")
+
+
+def liberty_log(j):
+    query_string = j.get('ibm_queryString', '')
+    if query_string:
+        query_string = '?' + query_string
+    print(
+        f"{get_timestamp(j)} {find('hostname', j)} {j.get('type', '')} [{j.get('logger_name', '')}] {j.get('ibm_uriPath', '')}{query_string} {j.get('ibm_responseCode', '')} {j.get('ibm_elapsedTime', '')} - {j.get('correlation-id', '')} - {j.get('level', '')}: {j.get('message', '<no msg>')}")
+    print_stack(j)
+    
+
+def default_log(j):
+    query_string = find('url.query', j)
+    if query_string:
+        query_string = '?' + query_string
+    print(
+        f"{get_timestamp(j)} {find('log.type', j)} [{find('logger.name', j)}] {find('url.path', j)}{query_string}  - {j.get('correlation-id', '')} - {find('log.level', j)}: {j.get('message', '<no msg>')}")
+    print_stack(j)
+
+
+def print_stack(j):
+    stack_trace = j.get('stack_trace')
+    if not print_stack_lines(stack_trace):
+        stack_trace = j.get('error.stack_trace')
+        if not print_stack_lines(stack_trace):
+            try: 
+                stack_trace = j['error']['stack_trace']
+                print_stack_lines(stack_trace)
+            except:
+                pass
+        
+
+def print_stack_lines(stack_trace):
+    if stack_trace:
+        for l in stack_trace.split('\n'):
+            print("   ", l)
+        return True
+    return False
 
 rawlines = None
 
@@ -69,23 +122,16 @@ for l in sys.stdin:
         if DUMP_JSON:
             print(l)
         # accesslog
-        type=j.get('type', '')
-        if type == 'liberty_accesslog':
-            print(f"{gettimestamp(j)} {gethostname(j)} {j.get('type', '')} {j.get('ibm_requestFirstLine', '')} {j.get('ibm_userAgent', '')} {j.get('ibm_elapsedTime', '')}  {j.get('ibm_responseCode', '')} {j.get('correlationId', '')}")
+        logType = j.get('log.type', '')
+        if logType == 'accesslog' or logType == 'liberty_accesslog':
+            ecs_access_logs(j)
         else:
-            query_string=j.get('ibm_queryString', '')
-            if query_string:
-                query_string = '?' + query_string
-            print(f"{gettimestamp(j)} {gethostname(j)} {j.get('type', '')} [{j.get('logger_name', '')}] {j.get('ibm_uriPath', '')}{query_string} {j.get('ibm_responseCode', '')} {j.get('ibm_elapsedTime', '')} - {j.get('correlationId', '')} - {j.get('level', '')}: {j.get('message', '<no msg>')}")
-            stack_trace = getstacktrace(j)
-            if stack_trace:
-                for l in stack_trace.split('\n'):
-                    print("   ", l)
+            default_log(j)
     except json.decoder.JSONDecodeError:
         l = l[:-1]
         if rawlines is not None:
             if l == ")":
-                print(decodeRawLines(rawlines))
+                print(decode_raw_lines(rawlines))
                 print(l)
                 rawlines = None
             else:  # FIXME check this is a raw data line

@@ -2,16 +2,16 @@
 shopt -s extglob
 
 usage() {
-  echo "$0 [-h] [-s duration] [-n <ads_namespace>] [-d <must_gather_dir] <correlationId>"
+  echo "$0 [-h] [-s duration] [-n <di_namespace>] [-d <must_gather_dir] <correlationId>"
   echo
-  echo "Searches for an ADS correlation ID in logs of ADS pods."
+  echo "Searches for a DI CMS correlation ID in logs of DI CMS pods."
   echo "By default it works on a remote cluster, provided that the kubectl command is configured to access this cluster."
   echo "If the -d option is provided, it works on logs gathered by the gather.sh command."
   echo
   echo "Options:"
   echo "  -s   is equivalent to --since option in kubectl logs command i.e taking a duration controlling the amount of logs to scan."
   echo "       Incompatible with the -d option."
-  echo "  -n   name of the Kubernetes namespace where ADS is installled; defaults to 'ads'."
+  echo "  -n   name of the Kubernetes namespace where DI CMS is installled; defaults to 'di'."
   echo "  -d   path of the folder where the tar.gz file has been uncompressed; the command will search in"
   echo "       these files instead of reaching for the Kubernetes cluster."
   echo "       Incompatible with the -s option."
@@ -23,7 +23,7 @@ display_log_line() {
   echo "${ticket_line}" | ./json2log
 }
 
-ads_namespace=ads
+di_namespace=di
 since=""
 gather_dir=
 while getopts "hs:n:d:" opt; do
@@ -36,7 +36,7 @@ while getopts "hs:n:d:" opt; do
         since=${OPTARG}
         ;;
     n)
-        ads_namespace=${OPTARG}
+        di_namespace=${OPTARG}
         ;;
     d)
         gather_dir=${OPTARG}
@@ -68,14 +68,14 @@ if [[ ! -z ${since} ]]; then
 fi
 
 if [[ -z ${gather_dir} ]] ; then
-  designer_pods=( $(kubectl -n "$ads_namespace" get pod -o name | grep 'rest-api\|parsing-service\|run-service\|credentials-service\|git-service') )
+  designer_pods=( $(kubectl -n "$di_namespace" get pod -o name | grep 'rest-api\|parsing-service\|run-service\|credentials-service\|git-service') )
 else
   shopt -s nullglob
-  designer_pods=( "$gather_dir/namespaces/$ads_namespace/"@(*rest-api*|*parsing-service*|*run-service*|*credentials-service*|*git-service*) )
+  designer_pods=( "$gather_dir/namespaces/$di_namespace/"@(*rest-api*|*parsing-service*|*run-service*|*credentials-service*|*git-service*) )
   shopt -u nullglob
 fi
 if [[ ${#designer_pods[@]} == 0 ]]; then
-  echo "Cannot find ADS Designer pods."
+  echo "Cannot find CMS Designer pods."
   exit 2
 fi
 
@@ -85,7 +85,7 @@ for pod in "${designer_pods[@]}"; do
   echo "Searching in pod ${pod}"
   # Searching one line in log with a specific correlationId.
   if [[ -z ${gather_dir} ]] ; then
-    ticket_line=$(kubectl -n "$ads_namespace" logs ${pod} ${since_flag} | grep "${correlationId}")
+    ticket_line=$(kubectl -n "$di_namespace" logs ${pod} ${since_flag} | grep "${correlationId}")
   else
     ticket_line=$(grep -rh "${correlationId}" "$pod/container_logs/")
   fi

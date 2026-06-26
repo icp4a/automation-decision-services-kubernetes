@@ -40,22 +40,21 @@ function create_pre_req_catalog_sources() {
   title "Creating pre-req catalog sources ..."
   if ! ${is_openshift}; then
     if ! ${existing_cert_manager}; then
-      create_catalog_source ibm-cert-manager-catalog ibm-cert-manager-${ibm_cert_manager_channel_on_cncf} ${ibm_cert_manager_catalog_image} ${olm_namespace} ${is_openshift}
+      create_catalog_source "ibm-cert-manager-catalog" "ibm-cert-manager-${ibm_cert_manager_channel_on_cncf}" "${ibm_cert_manager_catalog_image}" "${olm_namespace}" "${is_openshift}"
     fi
   fi
   if ! ${existing_licensing_service}; then
-    create_catalog_source ibm-licensing-catalog ibm-licensing-${licensing_service_channel} ${licensing_catalog_image} ${olm_namespace} ${is_openshift}
+    create_catalog_source "ibm-licensing-catalog" "ibm-licensing-${licensing_service_channel}" "${licensing_catalog_image}" "${olm_namespace}" "${is_openshift}"
   fi
 }
 
 function create_operator_groups() {
   title "Creating operator groups if needed ..."
 
-  local cert_manager_namespace
   if ! ${existing_cert_manager}; then
     create_namespace "${cert_manager_operator_namespace}"
 
-    kubectl apply -f - <<EOF
+    if ! kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -64,23 +63,23 @@ metadata:
 spec:
   upgradeStrategy: Default
 EOF
-    if [[ $? -ne 0 ]]; then
+    then
         error "Error creating ${cert_manager_operator_namespace} operator group."
     fi
   fi
 
   if ! ${existing_licensing_service}; then
-    create_namespace ${licensing_namespace}
+    create_namespace "${licensing_namespace}"
 
-    existing_og_name=$(kubectl get operatorgroup -n ${licensing_namespace} -o name | awk -F "/" '{print $NF}')
+    existing_og_name=$(kubectl get operatorgroup -n "${licensing_namespace}" -o name | awk -F "/" '{print $NF}')
     if [[ ! -z ${existing_og_name} ]]; then
       info "operatorgroup '${existing_og_name}' detected in namespace '${licensing_namespace}'."
       
-      add_target_namespace_to_operator_group ${licensing_namespace} ${existing_og_name} ${licensing_namespace}
+      add_target_namespace_to_operator_group "${licensing_namespace}" "${existing_og_name}" "${licensing_namespace}"
 
     else
       # use namespace name as operatorgroup name
-      kubectl apply -f - <<EOF
+      if ! kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -91,8 +90,7 @@ spec:
   - ${licensing_namespace}
   upgradeStrategy: Default
 EOF
-
-      if [[ $? -ne 0 ]]; then
+      then
         error "Error creating ibm-licensing operator group."
       fi
     fi
@@ -104,11 +102,11 @@ function create_subscriptions() {
     title "Creating subscription if needed ..."
 
   if ! ${existing_licensing_service}; then
-    create_licensing_service_subscription ${licensing_namespace} ${olm_namespace} ${licensing_service_channel}
+    create_licensing_service_subscription "${licensing_namespace}" "${olm_namespace}" "${licensing_service_channel}"
   fi
 
   if ! ${existing_cert_manager}; then
-    create_certificate_manager_subscription ${olm_namespace}
+    create_certificate_manager_subscription "${olm_namespace}"
   fi
 
 }
@@ -117,7 +115,7 @@ function check_prereqs() {
     title "Checking prereqs ..."
     check_command kubectl
 
-    oc_version=$(kubectl get clusterversion version -o=jsonpath={.status.desired.version} 2>/dev/null)
+    oc_version=$(kubectl get clusterversion version -o=jsonpath='{.status.desired.version}' 2>/dev/null)
     if [[ ! -z ${oc_version} ]]; then
       info "openshift version ${oc_version} detected."
       is_openshift=true
@@ -143,7 +141,7 @@ function check_prereqs() {
           fi
       else
         # Check if it is a supported version
-        olm_version=$(kubectl get csv packageserver -n $olm_namespace -o yaml -o jsonpath='{.spec.version}')
+        olm_version=$(kubectl get csv packageserver -n "$olm_namespace" -o yaml -o jsonpath='{.spec.version}')
         if (( $(bc <<< "${olm_version:2} < ${olm_minimal_version:3}") )); then
             error "Detected olm version v${olm_version} is less than supported minimal version ${olm_minimal_version}. You can not install without upgrading OLM version in your cluster."
             exit 1
@@ -155,12 +153,11 @@ function check_prereqs() {
 
 function check_cert_manager() {
     title "Checking if a certificate manager is already installed in the cluster ..."
-    kubectl get crd | grep cert-manager
-    if [[ $? -ne 0 ]] ; then
+    if ! kubectl get crd | grep cert-manager; then
        info "No certificate manager detected, will install one."
        existing_cert_manager=false
     else
-       info "A certificate manager is already installed in this cluster, ADS will use it."
+       info "A certificate manager is already installed in this cluster, DI CMS will use it."
        existing_cert_manager=true
     fi
     init_cert_manager_properties
@@ -169,8 +166,7 @@ function check_cert_manager() {
 function check_licensing_service() {
     title "Checking if licensing service is already installed in the cluster ..."
 
-    is_sub_exist "ibm-licensing-operator-app" # this will catch the packagenames of all ibm-licensing-operator-app
-    if [ $? -eq 0 ]; then
+    if is_sub_exist "ibm-licensing-operator-app"; then # this will catch the packagenames of all ibm-licensing-operator-app
         warning "There is an ibm-licensing-operator-app Subscription already. Skipping the installation."
         existing_licensing_service=true
     else

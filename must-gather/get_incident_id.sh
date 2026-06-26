@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
 
 usage() {
-  echo "$0 [-h] [-s duration] [-o <output-directory>] [-n <ads_namespace>] [-d <must_gather_dir] [<incident-id>]"
+  echo "$0 [-h] [-s duration] [-o <output-directory>] [-n <di_namespace>] [-d <must_gather_dir] [<incident-id>]"
   echo
-  echo "Searches for incident IDs in ADS Runtime pods.  If <incident-id> is not given, search for all the ticket ids in the time frame."
+  echo "Searches for incident IDs in DI CMS Runtime pods.  If <incident-id> is not given, search for all the ticket ids in the time frame."
   echo "By default it works on a remote cluster, provided that the kubectl command is configured to access this cluster."
   echo "If the -d option is provided, it works on logs gathered by the gather.sh command."
   echo
   echo "Options:"
   echo "  -s   option is equivalent to --since option in kubectl logs command i.e taking a duration controlling the amount of logs to scan."
-  echo "  -o   is used to write the log file for a given incident-id. Default value is /tmp/ads and file name will always follow this pattern <incident-id>.log"
-  echo "  -n   name of the Kubernetes namespace where ADS is installled; defaults to 'ads'."
+  echo "  -o   is used to write the log file for a given incident-id. Default value is /tmp/di and file name will always follow this pattern <incident-id>.log"
+  echo "  -n   name of the Kubernetes namespace where DI CMS is installled; defaults to 'di'."
   echo "  -d   path of the folder where the tar.gz file has been uncompressed; the command will search in"
   echo "       these files instead of reaching for the Kubernetes cluster."
   echo "       Incompatible with the -s option."
 }
 
 since=""
-output_directory='/tmp/ads'
-ads_namespace=ads
+output_directory='/tmp/di'
+di_namespace=di
 gather_dir=
 while getopts "hso:n:d:" opt; do
     case $opt in
@@ -33,7 +33,7 @@ while getopts "hso:n:d:" opt; do
         output_directory=${OPTARG}
         ;;
     n)
-        ads_namespace=${OPTARG}
+        di_namespace=${OPTARG}
         ;;
     d)
         gather_dir=${OPTARG}
@@ -83,7 +83,7 @@ if [[ -z ${gather_dir} ]] ; then
   runtime_service_pods=( $(kubectl get pod -o name | grep runtime-service) )
 else
   shopt -s nullglob
-  runtime_service_pods=( "$gather_dir/namespaces/$ads_namespace/"*runtime-service* )
+  runtime_service_pods=( "$gather_dir/namespaces/$di_namespace/"*runtime-service* )
   shopt -u nullglob
 fi
 if [[ ${#runtime_service_pods[@]} == 0 ]]; then
@@ -95,7 +95,7 @@ for pod in "${runtime_service_pods[@]}"; do
   if [[ -z ${incident_id} ]]; then
     # No specific incident-id provided, search for any we can find in logs.
     if [[ -z ${gather_dir} ]] ; then
-      incident_lines=$(kubectl -n "$ads_namespace" logs ${pod} ${since_flag} | grep "incidentId=")
+      incident_lines=$(kubectl -n "$di_namespace" logs ${pod} ${since_flag} | grep "incidentId=")
     else
       incident_lines=$(grep -rh "incidentId==" "$pod/container_logs/")
     fi
@@ -107,9 +107,9 @@ for pod in "${runtime_service_pods[@]}"; do
     # Searching one line in log with a specific incident-id.
     incident_line=$(kubectl logs ${pod} ${since_flag} | grep "incidentId=${incident_id}")
     if [[ -z ${gather_dir} ]] ; then
-      incident_line=$(kubectl -n "$ads_namespace" logs ${pod} ${since_flag} | grep "incidentId=${incident_id}")
+      incident_line=$(kubectl -n "$di_namespace" logs ${pod} ${since_flag} | grep "incidentId=${incident_id}")
     else
-      incident_line=$(grep -rh "incidentId=${incident_id}" "$gather_dir/namespaces/$ads_namespace/$pod/container_logs/")
+      incident_line=$(grep -rh "incidentId=${incident_id}" "$gather_dir/namespaces/$di_namespace/$pod/container_logs/")
     fi
 
     if [[ ! -z ${incident_line} ]]; then

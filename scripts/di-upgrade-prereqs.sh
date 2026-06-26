@@ -31,7 +31,7 @@ function check_prereqs() {
     title "Checking prereqs ..."
     check_command kubectl
     
-    oc_version=$(kubectl get clusterversion version -o=jsonpath={.status.desired.version} 2>/dev/null)
+    oc_version=$(kubectl get clusterversion version -o=jsonpath='{.status.desired.version}' 2>/dev/null)
     if [[ ! -z ${oc_version} ]]; then
       info "openshift version ${oc_version} detected."
       is_openshift=true
@@ -43,21 +43,22 @@ function check_prereqs() {
     else
       olm_namespace=$(kubectl get deployment -A | grep olm-operator | awk '{print $1}')
       if [[ -z "$olm_namespace" ]]; then
-        error "Cannot find OLM installation. Are you targetting a cluster where ADS is installed?"
+        error "Cannot find OLM installation. Are you targetting a cluster where DI CMS is installed?"
         exit 1
       fi
       success "OLM available under namespace ${olm_namespace}."
     fi
 
     # Check if licensing service version is one we support to upgrade or if it is already the one we target.
-    local vls=$(get_licensing_service_version ${licensing_namespace})
+    local vls
+    vls=$(get_licensing_service_version "${licensing_namespace}")
     if [[ "$vls" == "unknown" ]]; then
       error "Cannot find licensing version in your cluster, is it installed?"
       exit 1
-    elif [[ $(semver_compare ${vls} ${licensing_service_minimal_version_for_upgrade}) == "-1" ]]; then
+    elif [[ $(semver_compare "${vls}" "${licensing_service_minimal_version_for_upgrade}") == "-1" ]]; then
       error "Detected licensing service version ${vls} which is not greater or equals to version ${licensing_service_minimal_version_for_upgrade}. Cannot upgrade."
       exit 1
-    elif [[ $(semver_compare ${vls} ${licensing_service_target_version}) == "-1" ]]; then
+    elif [[ $(semver_compare "${vls}" "${licensing_service_target_version}") == "-1" ]]; then
       success "Licensing service v${vls} found. Will upgrade it."
       upgrade_licensing_service=true
     else
@@ -66,7 +67,8 @@ function check_prereqs() {
 
     ## Check Certificate manager
     init_cert_manager_properties
-    local csv_name=$(get_cert_manager_csv_name)
+    local csv_name
+    csv_name=$(get_cert_manager_csv_name)
     if [[ "$csv_name" == "unknown" ]]; then
       info "Unknown certificate manager."
     else
@@ -77,7 +79,7 @@ function check_prereqs() {
 function upgrade_prereqs_catalog_sources() {
   if ${upgrade_licensing_service}; then
     title "Creating licensing service catalog sources..."
-    create_catalog_source ibm-licensing-catalog ibm-licensing-${licensing_service_channel} ${licensing_catalog_image} ${olm_namespace} ${is_openshift}
+    create_catalog_source "ibm-licensing-catalog" "ibm-licensing-${licensing_service_channel}" "${licensing_catalog_image}" "${olm_namespace}" "${is_openshift}"
   fi
 }
 
@@ -85,13 +87,15 @@ function upgrade_prereqs_catalog_sources() {
 function upgrade_subscription_prereqs() {
     if ${upgrade_licensing_service}; then
       title "Ugrading licensing service..."
-      local sub=$(kubectl get sub ibm-licensing-operator-app -n ${licensing_namespace} -o jsonpath='{.metadata.name}')
-      kubectl delete sub ${sub} -n ${licensing_namespace}
+      local sub
+      sub=$(kubectl get sub ibm-licensing-operator-app -n "${licensing_namespace}" -o jsonpath='{.metadata.name}')
+      kubectl delete sub "${sub}" -n "${licensing_namespace}"
 
-      local csv=$(kubectl get csv -n ${licensing_namespace} | grep ibm-licensing-operator | cut -d ' ' -f 1)
-      kubectl delete csv ${csv} -n ${licensing_namespace}
+      local csv
+      csv=$(kubectl get csv -n "${licensing_namespace}" | grep ibm-licensing-operator | cut -d ' ' -f 1)
+      kubectl delete csv "${csv}" -n "${licensing_namespace}"
 
-      create_licensing_service_subscription ${licensing_namespace} ${olm_namespace} ${licensing_service_channel}
+      create_licensing_service_subscription "${licensing_namespace}" "${olm_namespace}" "${licensing_service_channel}"
     fi
 }
 

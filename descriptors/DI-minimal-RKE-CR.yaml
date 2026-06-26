@@ -1,12 +1,15 @@
 apiVersion: ads.ibm.com/v1
 kind: AutomationDecisionService
 metadata:
-  name: ads-standalone
-  namespace: ads
+  name: di
+  namespace: di
 spec:
   license:
     accept: true
-  version: "25.0.1"
+  version: "26.0.0"
+
+  # WARNING: For 26.0.0 GA, foundational services must be configured to use an external PostgreSQL database.
+  # For more information, see: https://www.ibm.com/docs/en/cloud-paks/foundational-services/4.x_cd?topic=installer-preparing-install-foundational-services#data
 
   zen:
     block_storage_classname: longhorn
@@ -14,12 +17,17 @@ spec:
   decision_designer:
     enabled: true
     database:
+      # A flag to control whether to use the embedded PostgreSQL database or not.
+      # WARNING: For 26.0.0 GA, set this value to 'false' because embedded PostgreSQL is not supported.
+      # When it is set to true, a dedicated PostgreSQL server is automatically installed, and Decision Designer is configured to use it.
+      embedded: false 
+
       # The name of the schema in the database for Decision Designer.
       current_schema: ads
 
       # Hostname of the remote PostgreSQL server. 
-      # Required 
-      hostname: <hostname>
+      # Required if database.use_embedded is false.
+      hostname: 
 
       # The name of the database for Decision Designer in the PostgreSQL server. 
       name: adsdesigner
@@ -37,12 +45,17 @@ spec:
   decision_runtime:
     enabled: true
     database:
+      # A flag to control whether to use the embedded PostgreSQL database or not.
+      # WARNING: For 26.0.0 GA, set this value to 'false' because embedded PostgreSQL is not supported.
+      # When it is set to true, a dedicated PostgreSQL server is automatically installed, and Decision Runtime is configured to use it.
+      embedded: false 
+
       # The name of the schema in the database for Decision Runtime.
       current_schema: ads
 
       # Hostname of the remote PostgreSQL server. 
-      # Required 
-      hostname: <hostname>
+      # Required if database.use_embedded is false.
+      hostname: 
 
       # The name of the database for Decision Runtime in the PostgreSQL server. 
       name: adsruntime

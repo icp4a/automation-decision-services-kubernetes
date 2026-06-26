@@ -38,8 +38,6 @@ gather_log ""
 
 ##########################
 
-get_k8s_resource configmap kube-public common-service-maps
-
 get_all_k8s_resource configmap "$olm_namespace"
 get_all_k8s_resource secret "$olm_namespace"
 get_all_k8s_resource pvc "$olm_namespace"

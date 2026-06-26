@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+set -o nounset
+
+current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source "${current_dir}/constants.sh"
+
+
 sed=${SED_CMD:-sed}
 
 function msg() {
@@ -30,7 +36,7 @@ function title() {
 function check_command() {
     local command=$1
 
-    if [[ -z "$(command -v ${command} 2> /dev/null)" ]]; then
+    if [[ -z "$(command -v "${command}" 2> /dev/null)" ]]; then
         error "${command} command not available"
     else
         success "${command} command available"
@@ -65,7 +71,7 @@ function wait_for_condition() {
             exit 2
         fi
 
-        sleep ${sleep_time}
+        sleep "${sleep_time}"
         result=$(eval "${condition}")
 
         if [[ -z "${result}" ]]; then
@@ -92,7 +98,7 @@ function wait_for_configmap() {
     local success_message="ConfigMap ${name} in namespace ${namespace} is available"
     local error_message="Timeout after ${total_time_mins} minutes waiting for ConfigMap ${name} in namespace ${namespace} to become available"
 
-    wait_for_condition "${condition}" ${retries} ${sleep_time} "${wait_message}" "${success_message}" "${error_message}"
+    wait_for_condition "${condition}" "${retries}" "${sleep_time}" "${wait_message}" "${success_message}" "${error_message}"
 }
 
 function wait_for_pod() {
@@ -106,7 +112,7 @@ function wait_for_pod() {
     local success_message="Pod ${name} in namespace ${namespace} is running"
     local error_message="Timeout after ${total_time_mins} minutes waiting for pod ${name} in namespace ${namespace} to be running"
 
-    wait_for_condition "${condition}" ${retries} ${sleep_time} "${wait_message}" "${success_message}" "${error_message}"
+    wait_for_condition "${condition}" "${retries}" "${sleep_time}" "${wait_message}" "${success_message}" "${error_message}"
 }
 
 function wait_for_operator() {
@@ -120,7 +126,7 @@ function wait_for_operator() {
     local success_message="Operator ${operator_name} in namespace ${namespace} is available"
     local error_message="Timeout after ${total_time_mins} minutes waiting for ${operator_name} in namespace ${namespace} to become available"
 
-    wait_for_condition "${condition}" ${retries} ${sleep_time} "${wait_message}" "${success_message}" "${error_message}"
+    wait_for_condition "${condition}" "${retries}" "${sleep_time}" "${wait_message}" "${success_message}" "${error_message}"
 }
 
 function wait_for_service_account() {
@@ -134,7 +140,7 @@ function wait_for_service_account() {
     local success_message="Service account ${name} is created"
     local error_message="Timeout after ${total_time_mins} minutes waiting for service account ${name} to be created"
 
-    wait_for_condition "${condition}" ${retries} ${sleep_time} "${wait_message}" "${success_message}" "${error_message}"
+    wait_for_condition "${condition}" "${retries}" "${sleep_time}" "${wait_message}" "${success_message}" "${error_message}"
 }
 
 function create_catalog_source() {
@@ -145,10 +151,10 @@ function create_catalog_source() {
     local is_openshift=$5
 
     title "Creating catalog source ${name}..."
-    kubectl -n ${olm_namespace} delete catalogsource ${name} --ignore-not-found
+    kubectl -n "${olm_namespace}" delete catalogsource "${name}" --ignore-not-found
 
     if ${is_openshift}; then # No grpcPodConfig
-    kubectl apply -f - << EOF
+    if ! kubectl apply -f - << EOF
   apiVersion: operators.coreos.com/v1alpha1
   kind: CatalogSource
   metadata:
@@ -166,9 +172,12 @@ function create_catalog_source() {
         interval: 45m
     priority: 100
 EOF
+    then
+          error "Error creating catalog source ${name}."
+    fi
     else
     # Adding grpcPodConfig
-    kubectl apply -f - << EOF
+    if ! kubectl apply -f - << EOF
   apiVersion: operators.coreos.com/v1alpha1
   kind: CatalogSource
   metadata:
@@ -188,33 +197,62 @@ EOF
         interval: 45m
     priority: 100
 EOF
-    fi
-    if [[ $? -ne 0 ]]; then
+    then
           error "Error creating catalog source ${name}."
     fi
-    wait_for_pod ${olm_namespace} "${name}"
+    fi
+    wait_for_pod "${olm_namespace}" "${name}"
 }
 
 
 function create_namespace() {
     local namespace=$1
+    local ns
 
-    ns=$(kubectl get ns ${namespace} -o=jsonpath={.metadata.name} 2>/dev/null)
+    ns=$(kubectl get ns "${namespace}" -o=jsonpath='{.metadata.name}' 2>/dev/null)
     if [[ -z ${ns} ]]; then
       info "Creating namespace ${namespace}"
-      kubectl create namespace ${namespace}
+      kubectl create namespace "${namespace}"
     fi
 }
 
 function is_sub_exist() {
     local package_name=$1
+    local name
     if [ $# -eq 2 ]; then
         local namespace=$2
-        local name=$(kuebctl get subscription.operators.coreos.com -n ${namespace} -o yaml -o jsonpath='{.items[*].spec.name}')
+        name=$(kubectl get subscription.operators.coreos.com -n "${namespace}" -o jsonpath='{.items[*].spec.name}')
     else
-        local name=$(kubectl get subscription.operators.coreos.com -A -o yaml -o jsonpath='{.items[*].spec.name}')
+        name=$(kubectl get subscription.operators.coreos.com -A -o jsonpath='{.items[*].spec.name}')
     fi
-    is_exist=$(echo "$name" | grep -w "$package_name")
+    echo "$name" | grep -w "$package_name"
+}
+
+function create_ums_subscription() {
+    local channel=$1
+    local namespace=$2
+
+    title "Creating UMS subscription ..."
+    if ! kubectl apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ibm-ums-operator
+  namespace: ${namespace}
+spec:
+  channel: ${channel}
+  installPlanApproval: Automatic
+  name: ibm-usage-metering-operator
+  source: ibm-ums-catalog
+  sourceNamespace: ${namespace}
+EOF
+    then
+        error "UMS Operator subscription could not be created."
+    fi
+
+    info "Waiting for UMS subscription to become active."
+
+    wait_for_operator "${namespace}" "ibm-usage-metering-operator"
 }
 
 function create_ads_subscription() {
@@ -222,7 +260,7 @@ function create_ads_subscription() {
     local namespace=$2
 
     title "Creating ADS subscription ..."
-    kubectl apply -f - <<EOF
+    if ! kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -235,7 +273,7 @@ spec:
   source: ibm-ads-operator-catalog
   sourceNamespace: ${namespace}
 EOF
-    if [[ $? -ne 0 ]]; then
+    then
         error "ADS Operator subscription could not be created."
     fi
 
@@ -246,19 +284,22 @@ EOF
     wait_for_operator "${namespace}" "operand-deployment-lifecycle-manager"
 }
 
-function create_ads_catalog_sources() {
+function create_ads_catalog_sources()
+ {
+  local namespace=$1
   title "Creating catalog sources ..."
 
   # Only create common services catalog if installed version is lower than the version in catalog referenced by cs_catalog_image variable
-  local vcs=$(get_common_service_version ${ads_namespace})
-  if [[ "$vcs" == "unknown" || $(semver_compare ${vcs} ${common_services_version}) == "-1" ]]; then
-      create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
-      create_catalog_source cs-im-operators "IBMCS IM Operators" ${cs_im_catalog_image} ${ads_namespace} ${is_openshift}
-      create_catalog_source cs-zen-operators "IBMCS Zen Operators" ${zen_catalog_image} ${ads_namespace} ${is_openshift}
+  local vcs
+  vcs=$(get_common_service_version "${namespace}")
+  if [[ "$vcs" == "unknown" || $(semver_compare "${vcs}" "${common_services_version}") == "-1" ]]; then
+      create_catalog_source opencloud-operators "IBMCS Operators" "${cs_catalog_image}" "${namespace}" "${is_openshift}"
+      create_catalog_source cs-im-operators "IBMCS IM Operators" "${cs_im_catalog_image}" "${namespace}" "${is_openshift}"
+      create_catalog_source cs-zen-operators "IBMCS Zen Operators" "${zen_catalog_image}" "${namespace}" "${is_openshift}"
   fi
   
-  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${ads_namespace} ${is_openshift}
-  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator-${ads_channel}" ${ads_catalog_image} ${ads_namespace} ${is_openshift}
+  create_catalog_source ibm-ums-catalog "UMS Catalog" "${ums_catalog_image}" "${namespace}" "${is_openshift}"
+  create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator-${ads_channel}" "${ads_catalog_image}" "${namespace}" "${is_openshift}"
 }
 
 function create_licensing_service_subscription() {
@@ -266,7 +307,7 @@ function create_licensing_service_subscription() {
   local olm_namespace=$2
   local channel=$3
 
-  kubectl apply -f - <<EOF
+  if ! kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -279,13 +320,12 @@ spec:
   source: ibm-licensing-catalog
   sourceNamespace: ${olm_namespace}
 EOF
-
-  if [[ $? -ne 0 ]]; then
+  then
     error "Error creating ibm-licensing subscription."
   fi
 
   info "Waiting for ibm-licensing subscription to become active."
-  wait_for_operator ${namespace} ibm-licensing-operator
+  wait_for_operator "${namespace}" ibm-licensing-operator
 }
 
 function init_cert_manager_properties () {
@@ -307,7 +347,7 @@ function init_cert_manager_properties () {
 function create_certificate_manager_subscription() {
   local olm_namespace=$1
 
-  kubectl apply -f - <<EOF
+  if ! kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -320,12 +360,12 @@ spec:
   source: ${cert_manager_catalog_name}
   sourceNamespace: ${olm_namespace}
 EOF
-  if [[ $? -ne 0 ]]; then
+  then
       error "Error creating cert-manager subscription."
   fi
 
   info "Waiting for cert-manager subscription to become active."
-  wait_for_operator ${cert_manager_operator_namespace} ${cert_manager_csv_base_name}
+  wait_for_operator "${cert_manager_operator_namespace}" "${cert_manager_csv_base_name}"
 }
 
 function get_licensing_service_version() {
@@ -338,7 +378,8 @@ function get_cert_manager_csv_name() {
 
   local path="{.spec.version}"
 
-  local csv_name=$(kubectl get csv -n ${namespace} | grep "cert-manager-operator" | cut -d ' ' -f1)
+  local csv_name
+  csv_name=$(kubectl get csv -n "${namespace}" | grep "cert-manager-operator" | cut -d ' ' -f1)
   
   if [[ -z ${csv_name} ]]; then
       echo "unknown"
@@ -357,86 +398,75 @@ function get_type_from_label() {
   local label=$2
   local path=$3
   local namespace=$4
-  local namespace_opt="-A"
+  local namespace_opt=("-A")
 
   if [[ ! -z "$namespace" ]]; then
-    namespace_opt="-n ${namespace}"
+    namespace_opt=("-n" "${namespace}")
   fi
 
-  kubectl get "${type}" ${namespace_opt} -l "${label}" -o jsonpath="${path}" >/dev/null 2>&1
-  if [ $? -eq 0 ]; then
-    echo $(kubectl get "${type}" ${namespace_opt} -l "${label}" -o jsonpath="${path}")
+  if kubectl get "${type}" "${namespace_opt[@]}" -l "${label}" -o jsonpath="${path}" >/dev/null 2>&1; then
+    kubectl get "${type}" "${namespace_opt[@]}" -l "${label}" -o jsonpath="${path}"
   else
     echo "unknown"
   fi
 }
 
+
+function delete_subscription_by_pattern() {
+    local namespace=$1
+    local pattern=$2
+    local use_extended_regex=${3:-false}
+
+    local grep_opts=""
+    if [[ "${use_extended_regex}" == "true" ]]; then
+        grep_opts="-E"
+    fi
+
+    local sub
+    sub=$(kubectl get sub -n "${namespace}" | grep "${grep_opts}" "${pattern}" | cut -d ' ' -f 1)
+    if [[ -n "${sub}" ]]; then
+        kubectl delete sub "${sub}" -n "${namespace}"
+    else
+        info "No subscription matching pattern '${pattern}' found in namespace ${namespace}"
+    fi
+}
+
+function delete_csv_by_pattern() {
+    local namespace=$1
+    local pattern=$2
+
+    local csv
+    csv=$(kubectl get csv -n "${namespace}" | grep "${pattern}" | cut -d ' ' -f 1)
+    if [[ -n "${csv}" ]]; then
+        kubectl delete csv "${csv}" -n "${namespace}"
+    else
+        info "No CSV matching pattern '${pattern}' found in namespace ${namespace}"
+    fi
+}
+
 function upgrade_ads_subscription() {
-    local old_channel=$1
-    local new_channel=$2
+    local namespace=$1
+    local old_channel=$2
+    local new_channel=$3
 
-    local sub=$(kubectl get sub ibm-ads-${old_channel} -n ${ads_namespace} -o jsonpath='{.metadata.name}')
-    kubectl delete sub ${sub} -n ${ads_namespace}
+    # Delete subscriptions
+    local sub
+    sub=$(kubectl get sub ibm-ads-"${old_channel}" -n "${namespace}" -o jsonpath='{.metadata.name}')
+    kubectl delete sub "${sub}" -n "${namespace}"
 
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-im-operator | cut -d ' ' -f 1)
-    # Subscription name depends of common service version
-    if [[ ! -z ${sub} ]]; then
-      kubectl delete sub ${sub} -n ${ads_namespace}
-    fi
+    delete_subscription_by_pattern "${namespace}" "ibm-common-service-operator"
+    delete_subscription_by_pattern "${namespace}" "ibm-i[a]?m-operator" true
+    delete_subscription_by_pattern "${namespace}" "operand-deployment-lifecycle-manager"
+    delete_subscription_by_pattern "${namespace}" "ibm-commonui-operator-app"
+    delete_subscription_by_pattern "${namespace}" "ibm-zen-operator"
     
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-iam-operator | cut -d ' ' -f 1)
-    # Subscription name depends of common service version
-    if [[ ! -z ${sub} ]]; then
-      kubectl delete sub ${sub} -n ${ads_namespace}
-    fi
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-idp-config-ui-operator | cut -d ' ' -f 1)
-    # Subscription name depends of common service version
-    if [[ ! -z ${sub} ]]; then
-      kubectl delete sub ${sub} -n ${ads_namespace}
-    fi
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-commonui-operator-app | cut -d ' ' -f 1)
-     # Subscription name depends of common service version
-    if [[ ! -z ${sub} ]]; then
-      kubectl delete sub ${sub} -n ${ads_namespace}
-    fi
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-platformui-operator | cut -d ' ' -f 1)
-    # Subscription name depends of common service version
-    if [[ ! -z ${sub} ]]; then
-      kubectl delete sub ${sub} -n ${ads_namespace}
-    fi
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep ibm-zen-operator | cut -d ' ' -f 1)
-    # Subscription name depends of common service version
-    if [[ ! -z ${sub} ]]; then
-      kubectl delete sub ${sub} -n ${ads_namespace}
-    fi
-
-    sub=$(kubectl get sub -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
-    kubectl delete sub ${sub} -n ${ads_namespace}
-    
-    local csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-ads-kn-operator.${old_channel} | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-common-service-operator | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-commonui-operator | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-iam-operator | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep ibm-zen-operator | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
-
-    csv=$(kubectl get csv -n ${ads_namespace} | grep operand-deployment-lifecycle-manager | cut -d ' ' -f 1)
-    kubectl delete csv ${csv} -n ${ads_namespace}
+    # Delete CSVs
+    delete_csv_by_pattern "${namespace}" "ibm-ads-kn-operator.${old_channel}"
+    delete_csv_by_pattern "${namespace}" "ibm-common-service-operator"
+    delete_csv_by_pattern "${namespace}" "ibm-commonui-operator"
+    delete_csv_by_pattern "${namespace}" "ibm-iam-operator"
+    delete_csv_by_pattern "${namespace}" "ibm-zen-operator"
+    delete_csv_by_pattern "${namespace}" "operand-deployment-lifecycle-manager"
 
     if ! ${is_openshift}; then
         # Remove workaround for for fixed bug in zen ingress generation by zen operator on CNCF platform
@@ -444,7 +474,7 @@ function upgrade_ads_subscription() {
         kubectl delete cm "zen-ingress-nginx-template-fixed" --ignore-not-found
     fi
 
-    create_ads_subscription ${new_channel} ${ads_namespace}
+    create_ads_subscription "${new_channel}" "${namespace}"
 }
 
 function semver_compare() {
@@ -476,7 +506,7 @@ function semver_compare() {
         return
     fi
 
-    echo $(compare_number "$version1_patch" "$version2_patch")
+    compare_number "$version1_patch" "$version2_patch"
 }
 
 function compare_number() {
@@ -499,24 +529,64 @@ function add_target_namespace_to_operator_group() {
     local operator_group_namespace=$3
 
     # extract target namespaces and convert the json array to a bash array
-    target_namespaces=($(echo $(kubectl get operatorgroup -n ${operator_group_namespace} ${operator_group_name} -o jsonpath='{.spec.targetNamespaces}') | tr -d '[]" ' | ${sed} 's/,/ /g'))
+    target_namespaces="$(kubectl get operatorgroup -n "${operator_group_namespace}" "${operator_group_name}" -o jsonpath='{.spec.targetNamespaces}' | tr -d '[]" ' | ${sed} 's/,/ /g')"
 
     # check if already contains the namespace
     for i in "${target_namespaces[@]}"
     do
-      if [[ $i == ${namespace} ]]; then
+      if [[ "$i" == "${namespace}" ]]; then
         value_found=true
         break
       fi
     done
     if [[ -z ${value_found+x} ]]; then
       title "Updating operator group ..."
-      kubectl patch operatorgroup -n ${operator_group_namespace} ${operator_group_name} -p "[{'op':'add','path':'/spec/targetNamespaces/-','value': ${namespace}}]" --type=json
-
-      if [[ $? -ne 0 ]]; then
+      if ! kubectl patch operatorgroup -n "${operator_group_namespace}" "${operator_group_name}" -p "[{'op':'add','path':'/spec/targetNamespaces/-','value': ${namespace}}]" --type=json; then
         error "Error updating operator group."
       fi
     else
       info "target namespaces of the operator group already contain the namespace ${namespace}"
     fi
+}
+
+function create_ums_instance() {
+  local namespace=$1
+  local push_to_swc=$2
+
+  title "Creating IBM Usage Metering instance if needed ..."
+
+  existing_ums_instance=$(kubectl get IBMUsageMetering -n "${namespace}" -o name)
+  if [[ -n "${existing_ums_instance}" ]] ; then
+    info "Found existing IBMUsageMetering instance ${existing_ums_instance}"
+  else
+
+    swc_exporter=""
+    if [[ "$push_to_swc" == true ]] ; then
+      swc_secret=$(kubectl get secret software-central-key -n "${namespace}" -o name | awk -F "/" '{print $NF}')
+      if [[ -z "$swc_secret" ]] ; then
+        error "missing secret software-central-key"
+        exit 1
+      fi
+      swc_exporter="  sender:
+    softwareCentral:
+      enable: true
+      entitlementKeySecret: software-central-key
+"
+    fi
+    
+    if ! kubectl apply -f - <<EOF
+apiVersion: operator.ibm.com/v1
+kind: IBMUsageMetering
+metadata:
+  name: ums
+  namespace: ${namespace}
+spec:
+  license:
+    accept: true
+${swc_exporter}
+EOF
+    then
+      error "Error creating IBMUsageMetering instance."
+    fi
+  fi
 }

@@ -3,16 +3,16 @@
 set -o nounset
 
 usage() {
-  echo "${BASH_SOURCE##*/} [-h] [-a <ADS namespace>] [-o <OLM namespace>] [-s <since>] [-d <work dir>]"
+  echo "${BASH_SOURCE##*/} [-h] [-a <DI CMS namespace>] [-o <OLM namespace>] [-s <since>] [-d <work dir>]"
   echo
-  echo "This command gathers all details from an ADS installation required by"
+  echo "This command gathers all details from an DI CMS installation required by"
   echo "the IBM supports to investigate support requests."
   echo "It generates a tar.gz file that can be sent to the IBM support team."
   echo "The kubectl command is required by this command.  It must be configured to allow"
   echo "access to the Kubernetes cluster."
   echo
   echo "Options:"
-  echo "  -a  name of the Kubernetes namespace where ADS is installed, default is 'ads'"
+  echo "  -a  name of the Kubernetes namespace where DI CMS is installed, default is 'di'"
   echo "  -o  name of the Kubernetes namespace where OLM is installed, default is 'olm'"
   echo "  -s  only gather pod logs newer than a relative duration like 5s, 2m, or 3h."
   echo "      Default is to gather all logs.  Accepts a value compatible with the --since option"
@@ -21,8 +21,13 @@ usage() {
   echo "      directory and the resulting tar.gz file.  Defaults to the current directory."
 }
 
-ads_namespace=ads
-olm_namespace=olm
+di_namespace=di
+# Auto-detect OLM namespace: use openshift-marketplace if it exists, otherwise olm
+if kubectl get ns openshift-marketplace >/dev/null 2>&1; then
+    olm_namespace=openshift-marketplace
+else
+    olm_namespace=olm
+fi
 since=0s
 work_dir=.
 
@@ -33,7 +38,7 @@ while getopts "ha:o:s:d:" opt; do
         exit 1
         ;;
     a)
-        ads_namespace=${OPTARG}
+        di_namespace=${OPTARG}
         ;;
     o)
         olm_namespace=${OPTARG}
@@ -52,7 +57,7 @@ while getopts "ha:o:s:d:" opt; do
 done
 shift $((OPTIND-1))
 
-output_dir_base=ads_must_gather-$(date +%Y-%m-%d-%H:%M:%S)
+output_dir_base=di_must_gather-$(date +%Y-%m-%d-%H:%M:%S)
 output_dir="$work_dir/$output_dir_base"
 mkdir "$output_dir"
 if [[ $? -ne 0 ]] ; then
@@ -66,16 +71,16 @@ source "$gather_scripts/common.sh"
 
 printf "Details of progress logged into $output_dir/gather_log.txt\n"
 
-gather_log "Must-gather for ADS Standalone"
+gather_log "Must-gather for DI CMS"
 gather_log "Params:"
 gather_log "  OLM namespace: '$olm_namespace'"
-gather_log "  ADS namespace: '$ads_namespace'"
+gather_log "  DI CMS namespace: '$di_namespace'"
 gather_log "  gather logs since: $since"
 gather_log ""
 gather_log "Start time: $(date)"
 
-if ! $KUBECTL get ns "$ads_namespace" >/dev/null  2>&1; then
-   printf "ADS namespace '$ads_namespace' doesn't exist\n"
+if ! $KUBECTL get ns "$di_namespace" >/dev/null  2>&1; then
+   printf "DI CMS namespace '$di_namespace' doesn't exist\n"
    exit 1
 fi
 
@@ -92,8 +97,8 @@ printf "Gathering resources from OLM install..."
 "$gather_scripts"/gather_olm_install.sh -n "$olm_namespace" -s "$since" -d "$output_dir" -l
 printf " done.\n"
 
-printf "Gathering resources from ADS install..."
-"$gather_scripts"/gather_ads_install.sh -n "$ads_namespace" -s "$since" -d "$output_dir" -l
+printf "Gathering resources from CMS install..."
+"$gather_scripts"/gather_di_install.sh -n "$di_namespace" -s "$since" -d "$output_dir" -l
 printf " done.\n"
 
 gather_log ""

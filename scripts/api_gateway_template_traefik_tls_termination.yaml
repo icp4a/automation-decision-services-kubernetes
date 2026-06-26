@@ -1,0 +1,434 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: GATEWAY_NAME
+  namespace: NAMESPACE
+spec:
+  gatewayClassName: traefik
+  listeners:
+  - name: https-cp-console
+    protocol: HTTPS
+    port: 8443
+    hostname: "HOST"
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: TLS_SECRET
+  - name: https-cpd
+    protocol: HTTPS
+    port: 8443
+    hostname: "NAMESPACE-cpd.DOMAIN"
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: TLS_SECRET
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: GATEWAY_NAME-licensing
+  namespace: LICENSING_NS
+spec:
+  gatewayClassName: traefik
+  listeners:
+  - name: https-licensing
+    protocol: HTTPS
+    port: 8443
+    hostname: "licensing.DOMAIN"
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: TLS_SECRET
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: platform-auth-service-tls-policy
+  namespace: NAMESPACE
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: platform-auth-service
+  validation:
+    caCertificateRefs:
+    - name: cs-ca-certificate-cm
+      group: ""
+      kind: ConfigMap
+    hostname: platform-auth-service
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: platform-identity-provider-tls-policy
+  namespace: NAMESPACE
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: platform-identity-provider
+  validation:
+    caCertificateRefs:
+    - name: cs-ca-certificate-cm
+      group: ""
+      kind: ConfigMap
+    hostname: platform-identity-provider
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: platform-identity-management-tls-policy
+  namespace: NAMESPACE
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: platform-identity-management
+  validation:
+    caCertificateRefs:
+    - name: cs-ca-certificate-cm
+      group: ""
+      kind: ConfigMap
+    hostname: platform-identity-management
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: common-web-ui-tls-policy
+  namespace: NAMESPACE
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: common-web-ui
+  validation:
+    caCertificateRefs:
+    - name: cs-ca-certificate-cm
+      group: ""
+      kind: ConfigMap
+    hostname: common-web-ui
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: ibm-licensing-service-tls-policy
+  namespace: LICENSING_NS
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: ibm-licensing-service-instance
+  validation:
+    caCertificateRefs:
+    - name: ibm-licensing-ca-cert-cm
+      group: ""
+      kind: ConfigMap
+    hostname: ibm-licensing-service-instance.LICENSING_NS.svc.cluster.local
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: ibm-nginx-svc-tls-policy
+  namespace: NAMESPACE
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: ibm-nginx-svc
+  validation:
+    caCertificateRefs:
+    - name: ibm-nginx-ca-cm
+      group: ""
+      kind: ConfigMap
+    hostname: ibm-nginx-svc
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cncf-social-login-callback
+  namespace: NAMESPACE
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME
+    namespace: NAMESPACE
+    sectionName: https-cp-console
+  hostnames:
+  - "HOST"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /ibm/api/social-login
+    backendRefs:
+    - name: platform-auth-service
+      port: 9443
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /ibm/api/social-login
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cncf-saml-ui-callback
+  namespace: NAMESPACE
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME
+    namespace: NAMESPACE
+    sectionName: https-cp-console
+  hostnames:
+  - "HOST"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /ibm/saml20/defaultSP/acs
+    backendRefs:
+    - name: platform-auth-service
+      port: 9443
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /ibm/saml20/defaultSP/acs
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cncf-platform-oidc
+  namespace: NAMESPACE
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME
+    namespace: NAMESPACE
+    sectionName: https-cp-console
+  hostnames:
+  - "HOST"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /oidc
+    backendRefs:
+    - name: platform-auth-service
+      port: 9443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cncf-platform-login
+  namespace: NAMESPACE
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME
+    namespace: NAMESPACE
+    sectionName: https-cp-console
+  hostnames:
+  - "HOST"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /login
+    backendRefs:
+    - name: platform-identity-provider
+      port: 4300
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: /v1/auth/authorize?client_id=CLIENT_ID&redirect_uri=https://HOST/auth/liberty/callback&response_type=code&scope=openid+email+profile&orig=/login
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cncf-platform-id-provider
+  namespace: NAMESPACE
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME
+    namespace: NAMESPACE
+    sectionName: https-cp-console
+  hostnames:
+  - "HOST"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /idprovider/
+    backendRefs:
+    - name: platform-identity-provider
+      port: 4300
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cncf-platform-id-auth
+  namespace: NAMESPACE
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME
+    namespace: NAMESPACE
+    sectionName: https-cp-console
+  hostnames:
+  - "HOST"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /idauth/
+    backendRefs:
+    - name: platform-auth-service
+      port: 9443
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+  - matches:
+    - path:
+        type: Exact
+        value: /idauth
+    backendRefs:
+    - name: platform-auth-service
+      port: 9443
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cncf-platform-auth
+  namespace: NAMESPACE
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME
+    namespace: NAMESPACE
+    sectionName: https-cp-console
+  hostnames:
+  - "HOST"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /v1/auth/
+    backendRefs:
+    - name: platform-identity-provider
+      port: 4300
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /v1/auth/
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cncf-id-mgmt
+  namespace: NAMESPACE
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME
+    namespace: NAMESPACE
+    sectionName: https-cp-console
+  hostnames:
+  - "HOST"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /idmgmt/
+    backendRefs:
+    - name: platform-identity-management
+      port: 4500
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cncf-common-web-ui
+  namespace: NAMESPACE
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME
+    namespace: NAMESPACE
+    sectionName: https-cp-console
+  hostnames:
+  - "HOST"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: common-web-ui
+      port: 3000
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cncf-ibm-licensing-service-instance
+  namespace: LICENSING_NS
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME-licensing
+    namespace: LICENSING_NS
+    sectionName: https-licensing
+  hostnames:
+  - "licensing.DOMAIN"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: ibm-licensing-service-instance
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: zen-route
+  namespace: NAMESPACE
+spec:
+  parentRefs:
+  - name: GATEWAY_NAME
+    namespace: NAMESPACE
+    sectionName: https-cpd
+  hostnames:
+  - "NAMESPACE-cpd.DOMAIN"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: ibm-nginx-svc
+      port: 443
+
+# Made with Bob

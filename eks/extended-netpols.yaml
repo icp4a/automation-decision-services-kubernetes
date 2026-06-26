@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: access-to-ibm-common-service-operator
-  namespace: "<ads-namespace>"
+  namespace: "<di-namespace>"
 spec:
   podSelector:
     matchLabels:
@@ -18,7 +18,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: access-to-postgresql-operator
-  namespace: "<ads-namespace>"
+  namespace: "<di-namespace>"
 spec:
   podSelector:
     matchLabels:
@@ -34,7 +34,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: access-to-kubernetes
-  namespace: "<ads-namespace>"
+  namespace: "<di-namespace>"
 spec:
   egress:
   - ports:
@@ -55,7 +55,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: ingress-from-olm
-  namespace: "<ads-namespace>"
+  namespace: "<di-namespace>"
 spec:
   podSelector:
     matchLabels:

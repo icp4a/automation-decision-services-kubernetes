@@ -11,17 +11,17 @@ This directory contains various scripts to be used in the Must Gather context.
 
 ### Gather all ###
 
-Execute the `./gather.sh` command to gather all details from the cluster where ADS is installed into a `tar.gz` file that can be sent to the IBM support team.
+Execute the `./gather.sh` command to gather all details from the cluster where DI CMS is installed into a `tar.gz` file that can be sent to the IBM support team.
 
 See `./gather.sh -h` to read the usage details of this command.  You can limit the amount of logs gathered with the `-s` option.  It is recommanded to use the `-d` option to specify a dedicated work directory for the command.
 
-### Troubleshoot common ADS issues
+### Troubleshoot common DI CMS issues
 
-Execute the `./troubleshoot_common_causes.sh` command to investigate across various known issues that may affect ADS services
+Execute the `./troubleshoot_common_causes.sh` command to investigate across various known issues that may affect DI CMS services
 
 This will search inside the project for:
  - dependent services in a bad status
- - issues with ADS pods
+ - issues with DI CMS pods
 
 ### Get Designer Ticket ID information
 
@@ -38,11 +38,11 @@ When executed on a given ticket-id, you also have extra information related to p
 
 `Found ticket id in pod/ads-ads-rest-api-6488d8f7cf-kwjzf`
 
-If you want the script to automatically search for correlationId value in all ADS pods, add the `-v` flag as following `./get_ticket_id.sh -v`
+If you want the script to automatically search for correlationId value in all DI CMS pods, add the `-v` flag as following `./get_ticket_id.sh -v`
 
-NB: this command save all information related to the ticket in /tmp/ads/<ticket_id>.log (you can specify an output directory with -o parameter)
+NB: this command save all information related to the ticket in /tmp/di/<ticket_id>.log (you can specify an output directory with -o parameter)
 
-Ex: `./get_ticket_id.sh -v -o "/my/directory/for/ads_logs"`
+Ex: `./get_ticket_id.sh -v -o "/my/directory/for/di_logs"`
 
 ### Get Runtime Incident ID information
 
@@ -51,11 +51,11 @@ Search for an incident `8997c356-c42c-462f-a43a-9feefe5d2bec` , execute `./get_t
 
 Use the `-d` option to search in logs gathered by the `gather.sh` script instead of connecting to a Kubernetes cluster directly.
 
-By default, incident also saved in /tmp/ads/<incident_id>.log
+By default, incident also saved in /tmp/di/<incident_id>.log
 
 ### json2log
 
-The ADS pods produce logs in the `json` format.  This can be hard to read when reading these logs
+The DI CMS pods produce logs in the `json` format.  This can be hard to read when reading these logs
 directly with the `kubectl logs`.  The `json2log` command is a tool that converts the `json` log lines into a more human-readable format.
 
 Usage:
