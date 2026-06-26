@@ -1,9 +1,9 @@
 name: ibm-ads
-version: 1.4.7
-description: List of CASEs required for air gapped deployment of ADS 24.0.1-IF007
+version: 1.4.8
+description: List of CASEs required for air gapped deployment of ADS 24.0.1-IF008
 cases:
 - name: ibm-ads
-  version: 1.4.7
+  version: 1.4.8
   launch: true
 - name: ibm-cloud-native-postgresql
   version: 4.29.0+20240829.203322.1920
