@@ -61,7 +61,7 @@ function check_prereqs() {
         error "Cannot find licensing version in your cluster. Please use ads-install-prereqs.sh script to install it."
         exit 1
     elif [[ $(semver_compare "${vls}" "${licensing_service_target_version}") == "-1" ]]; then
-        error "Detected licensing service version ${vls} which is not ${licensing_service_target_version}. Please upgrade pre-requisites with ads-upgrade-prereqs.sh script."
+        error "Detected licensing service version ${vls} which is not ${licensing_service_target_version}. Please upgrade pre-requisites with di-upgrade-prereqs.sh script."
         exit 1
     else
        success "Licensing service v${vls} found."
@@ -108,8 +108,8 @@ function check_subscription() {
 function upgrade_to_ifix() {
     check_prereqs
     check_subscription
+    upgrade_cs_config_map "${di_namespace}"
     create_ads_catalog_sources "${di_namespace}"
-    create_ums_subscription "${ums_channel}" "${di_namespace}"
     upgrade_ads_subscription "${di_namespace}" "${ads_channel}" "${ads_channel}" # keep same channel
 }
 
