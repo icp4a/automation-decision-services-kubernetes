@@ -8,6 +8,8 @@ spec:
     accept: true
   version: "26.0.0"
 
+  deployment_platform: other
+
   # WARNING: For 26.0.0 GA, foundational services must be configured to use an external PostgreSQL database.
   # For more information, see: https://www.ibm.com/docs/en/cloud-paks/foundational-services/4.x_cd?topic=installer-preparing-install-foundational-services#data
 

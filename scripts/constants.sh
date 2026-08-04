@@ -12,7 +12,7 @@ ibm_cert_manager_channel_on_cncf=v4.2
 redhat_cert_manager_channel_on_ocp=stable-v1
 ads_channel=v26.0
 ums_channel=v1.0
-common_services_version=4.18.1 # Common Service version to install
+common_services_version=4.19.2 # Common Service version to install
 
 licensing_service_minimal_version_for_upgrade="4.2.0"
 
@@ -22,11 +22,12 @@ cs_maximal_version_for_upgrade="5.0.0" # Maximal supported Common Service versio
 cs_minimal_version_for_ifix="4.18.1" # Minimal supported Common Service version before upgrading for ifix
 cs_maximal_version_for_ifix="5.0.0" # Maximal supported Common Service version before upgrading for ifix
 
-licensing_catalog_image="icr.io/cpopen/ibm-licensing-catalog@sha256:dc50f5d6e34b63d05e486bec83064a702fe60dd7ecaa0a827a154c4bf3a426d1" # IBM License Manager 4.2.23 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-licensing/4.2.23/OLM/catalog-sources.yaml
-ibm_cert_manager_catalog_image="icr.io/cpopen/ibm-cert-manager-operator-catalog@sha256:cdfefe057e75b30c50b1cf9f8c2a71a07b498d09bb5b74c454d3a0a7c11aa989" # IBM Certificate Manager 4.2.22 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cert-manager/4.2.22/OLM/catalog-sources.yaml
+licensing_catalog_image="icr.io/cpopen/ibm-licensing-catalog@sha256:8e2bee469a186599167283316e29f9e6e4f413b7bc7cdebcd3828ecf8f81b956" # IBM License Manager 4.2.24 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-licensing/4.2.24/OLM/catalog-sources.yaml
+ibm_cert_manager_catalog_image="icr.io/cpopen/ibm-cert-manager-operator-catalog@sha256:c704e8c7418cd6df1e766bd8aea2975d0e7c988509c28456bf37ca5b62c18ac8" # IBM Certificate Manager 4.2.23 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cert-manager/4.2.23/OLM/catalog-sources.yaml
 ums_catalog_image="icr.io/cpopen/ibm-usage-metering-operator-catalog@sha256:b80738a02914c0eb08af87a7bc63226bf2b65de7add92156cc8d14673707b4dc" # IBM usage metering 1.0.6 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-usage-metering/1.0.6/OLM/catalog-sources.yaml
 
-cs_catalog_image="icr.io/cpopen/ibm-cs-install-catalog@sha256:f76c75ccb46689bdfd7ad30169593c96895aba5458962681aaa3cef74fb7a324" # IBM Cloud Foundational Services 4.18.1 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cs-install/4.18.1/OLM/catalog-sources.yaml
-cs_im_catalog_image="icr.io/cpopen/ibm-iam-operator-catalog@sha256:845eb294d21e6af580f70424f7c57886194cd5644bb1d57e31d8be6818b4fc2c" # IBM CS IM Operator Catalog 4.17.1 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cs-iam/4.17.1/OLM/catalog-sources.yaml
-zen_catalog_image="icr.io/cpopen/ibm-zen-operator-catalog@sha256:60e24dbd2d14ba44dc5dd24b4e295e6072dbd7d5278011342e011b5de2650c44" # IBM Zen Operator Catalog 6.4.7+20260608.081833.10 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-zen/6.4.7%2B20260608.081833.10/OLM/catalog-sources.yaml
-ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:579c447ca5e7dfe4469ff48904c14704c71c8d9699072d8736595c7231ac938c" # 26.0.0
+cs_catalog_image="icr.io/cpopen/ibm-cs-install-catalog@sha256:56405e6eceab8851a1ef4e123283102c60ec4a0cf7e3760eb4737bd9f1552d2c" # IBM Cloud Foundational Services 4.19.2 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cs-install/4.19.2/OLM/catalog-sources.yaml
+cs_im_catalog_image="icr.io/cpopen/ibm-iam-operator-catalog@sha256:cc6014641c67668e77d7a512ae02a0f2521f78ba406f86c17f340f13ea8c836a" # IBM CS IM Operator Catalog 4.18.1 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cs-iam/4.18.1/OLM/catalog-sources.yaml
+zen_catalog_image="icr.io/cpopen/ibm-zen-operator-catalog@sha256:1bcfdf65019d322a2d137f72bf216e80f98abfc80f8338b575d43fabf5bdebb9" # IBM Zen Operator Catalog 6.10.3+20260713.120632.33 from https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-zen/6.10.3%2B20260713.120632.33/OLM/catalog-sources.yaml
+ibm_pg_catalog_image="icr.io/cpopen/ibm-pg-operator-catalog@sha256:de4e217d062bbf110a98a5024b5e263e36673aab7262ed65423e1a6ee8304eb9" # IBM PG Catalog v28.4.0 from https://github.ibm.com/ibm-pg/ibm-pg-operator/releases/tag/v28.4.0
+ads_catalog_image="icr.io/cpopen/ibm-ads-operator-catalog@sha256:ad37b2bbbe31dc1523cdfe75121ca9b6da6cbe1583d504fff76837d435a12587" # 26.0.0-IF001

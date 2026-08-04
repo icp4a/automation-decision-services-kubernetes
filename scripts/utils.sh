@@ -296,6 +296,7 @@ function create_ads_catalog_sources()
       create_catalog_source opencloud-operators "IBMCS Operators" "${cs_catalog_image}" "${namespace}" "${is_openshift}"
       create_catalog_source cs-im-operators "IBMCS IM Operators" "${cs_im_catalog_image}" "${namespace}" "${is_openshift}"
       create_catalog_source cs-zen-operators "IBMCS Zen Operators" "${zen_catalog_image}" "${namespace}" "${is_openshift}"
+      create_catalog_source ibm-pg-operator-catalog "IBM PG Operator" "${ibm_pg_catalog_image}" "${namespace}" "${is_openshift}"
   fi
   
   create_catalog_source ibm-ums-catalog "UMS Catalog" "${ums_catalog_image}" "${namespace}" "${is_openshift}"
@@ -423,7 +424,7 @@ function delete_subscription_by_pattern() {
     fi
 
     local sub
-    sub=$(kubectl get sub -n "${namespace}" | grep "${grep_opts}" "${pattern}" | cut -d ' ' -f 1)
+    sub=$(kubectl get sub -n "${namespace}" | grep ${grep_opts} "${pattern}" | cut -d ' ' -f 1)
     if [[ -n "${sub}" ]]; then
         kubectl delete sub "${sub}" -n "${namespace}"
     else
@@ -475,6 +476,22 @@ function upgrade_ads_subscription() {
     fi
 
     create_ads_subscription "${new_channel}" "${namespace}"
+}
+
+function upgrade_cs_config_map() {
+    local namespace=$1
+    if ! ${is_openshift}; then
+        local has_label
+        has_label=$(kubectl get cm ibm-cpp-config -n "${namespace}" -o jsonpath='{.metadata.labels.operator\.ibm\.com/managedByCsOperator}' 2>/dev/null)
+        if [[ "${has_label}" != "true" ]]; then
+            info "Adding missing label operator.ibm.com/managedByCsOperator to ibm-cpp-config ConfigMap..."
+            kubectl patch configmap ibm-cpp-config -n "${namespace}" --type merge \
+                -p '{"metadata":{"labels":{"operator.ibm.com/managedByCsOperator":"true"}}}'
+            success "Label added to ibm-cpp-config ConfigMap."
+        else
+            info "ibm-cpp-config ConfigMap already has the required label."
+        fi
+    fi
 }
 
 function semver_compare() {
