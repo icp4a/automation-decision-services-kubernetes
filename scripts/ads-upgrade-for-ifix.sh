@@ -106,6 +106,7 @@ function check_subscription() {
 function upgrade_to_ifix() {
     check_prereqs
     check_subscription
+    upgrade_cs_config_map "${ads_namespace}"
     create_ads_catalog_sources
     upgrade_ads_subscription ${ads_channel} ${ads_channel} # keep same channel 
 }

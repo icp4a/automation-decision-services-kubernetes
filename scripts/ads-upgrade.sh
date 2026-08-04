@@ -117,6 +117,7 @@ function check_subscription() {
 function upgrade {
     check_prereqs
     check_subscription "${ads_channel_previous_version}"
+    upgrade_cs_config_map "${di_namespace}"
     create_ads_catalog_sources
     upgrade_ads_subscription ${channel_found} ${ads_channel}
 }
