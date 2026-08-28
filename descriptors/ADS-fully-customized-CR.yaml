@@ -30,6 +30,11 @@ spec:
     # License information: http://www14.software.ibm.com/cgi-bin/weblap/lap.pl?li_formnum=L-ASAY-CHVJG8
     accept:
 
+  # The type of Kubernetes platform where this installation is running.
+  # Valid values are OCP, ROKS and other.  Default value is OCP.
+  # This parameter controls in particular the seccomp profile default config and the run_as_user parameter (see below).
+  deployment_platform: OCP
+
   # You can specify a profile size for Automation Decision Services - valid values are small,medium,large,extra-large.
   # The default is small.
   # This value affects the default resource requests and limits of ADS services.
