@@ -1,23 +1,23 @@
 name: ibm-ads
-version: 26.0.1
-description: List of CASEs required for air gapped deployment of ADS 26.0.0-IF001
+version: 26.0.2
+description: List of CASEs required for air gapped deployment of ADS 26.0.0-IF002
 cases:
 - name: ibm-ads
-  version: 26.0.1
+  version: 26.0.2
   launch: true
 - name: ibm-cp-common-services
-  version: 4.18.1
+  version: 4.19.2
 - name: ibm-cloud-native-postgresql
   version: 5.31.1+20260310.150029.2714
 - name: ibm-cs-iam
-  version: 4.17.1
-- name: ibm-cs-install
   version: 4.18.1
+- name: ibm-cs-install
+  version: 4.19.2
 - name: ibm-events-operator
   version: 5.2.1
 - name: ibm-usage-metering
-  version: 1.0.5
+  version: 1.0.6
 - name: ibm-zen
-  version: 6.4.5+20260501.202141.4
+  version: 6.10.3+20260713.120632.33
 - name: ibm-licensing
-  version: 4.2.22
+  version: 4.2.24
