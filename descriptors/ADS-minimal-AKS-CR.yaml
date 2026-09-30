@@ -8,6 +8,8 @@ spec:
     accept: true
   version: "25.0.0"
 
+  deployment_platform: other
+
   zen:
     block_storage_classname: managed-csi
 
