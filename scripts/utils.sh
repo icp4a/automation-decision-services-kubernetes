@@ -253,9 +253,10 @@ function create_ads_catalog_sources() {
   local vcs=$(get_common_service_version ${ads_namespace})
   if [[ "$vcs" == "unknown" || $(semver_compare ${vcs} ${common_services_version}) == "-1" ]]; then
       create_catalog_source opencloud-operators "IBMCS Operators" ${cs_catalog_image} ${ads_namespace} ${is_openshift}
+      create_catalog_source cs-zen-operators "IBMCS Zen Operators" "${zen_catalog_image}" "${ads_namespace}" "${is_openshift}"
   fi
   
-  create_catalog_source cloud-native-postgresql-catalog "Cloud Native Postgresql Catalog" ${edb_catalog_image} ${ads_namespace} ${is_openshift}
+  create_catalog_source ibm-pg-operator-catalog "IBM PG Operator" "${ibm_pg_catalog_image}" "${ads_namespace}" "${is_openshift}"
   create_catalog_source ibm-ads-operator-catalog "ibm-ads-operator-${ads_channel}" ${ads_catalog_image} ${ads_namespace} ${is_openshift}
 }
 
