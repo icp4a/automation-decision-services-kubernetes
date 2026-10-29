@@ -85,6 +85,18 @@ spec:
   # WARNING: For 26.0.0 GA, foundational services must be configured to use an external PostgreSQL database.
   # For more information, see: https://www.ibm.com/docs/en/cloud-paks/foundational-services/4.x_cd?topic=installer-preparing-install-foundational-services#data
 
+  # If you want to use IBM Decision Intelligence Client Managed Software with IBM Cloud Pak® for Business Automation entitlements, create this parameter and set its value to pvu-vpc.
+  # For more information, see https://www.ibm.com/docs/en/SSGH5D_26.0.0/com.ibm.ads.install/configure_topics/con_usage_metrics_to_swc.html
+  #metering_mode: "pvu-vpc"
+
+  # If you want to use IBM Decision Intelligence Client Managed Software with IBM Decision Intelligence Enterprise Edition entitlements, create this parameter and set its value to true.
+  # Since 26.0.0-IF004
+  #enterprise_edition_mode: true
+
+  # If you want to use IBM Decision Intelligence Client Managed Software with IBM Cloud Pak® for Business Automation or IBM Decision Intelligence Enterprise Edition entitlements but in non production mode, create this parameter and set its value to non-production.
+  # For more information, see https://www.ibm.com/docs/en/SSGH5D_26.0.0/com.ibm.ads.install/configure_topics/con_usage_metrics_to_swc.html
+  #deployment_license: "production"
+
   # These parameters configure the installation of the Zen instance that is triggered by this ADS instance.
   zen:
     # Set the storage class for persistent volumes backed by a block device as needed by Zen.
